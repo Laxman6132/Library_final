@@ -1,0 +1,33 @@
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:8080 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+  0      0   0      0   0      0      0      0                              0*   Trying [::1]:8080...
+* Established connection to localhost (::1 port 8080) from ::1 port 63530 
+* using HTTP/1.x
+> POST /user/add HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/8.18.0
+> Accept: */*
+> Content-Type: application/json
+> Content-Length: 129
+> 
+} [129 bytes data]
+* upload completely sent off: 129 bytes
+< HTTP/1.1 403 
+< Vary: Origin
+< Vary: Access-Control-Request-Method
+< Vary: Access-Control-Request-Headers
+< X-Content-Type-Options: nosniff
+< X-XSS-Protection: 0
+< Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+< Pragma: no-cache
+< Expires: 0
+< X-Frame-Options: DENY
+< Content-Length: 0
+< Date: Fri, 03 Apr 2026 05:13:34 GMT
+< 
+100    129   0      0 100    129      0   4698                              0100    129   0      0 100    129      0   4623                              0100    129   0      0 100    129      0   4576                              0
+* Connection #0 to host localhost:8080 left intact
