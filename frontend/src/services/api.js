@@ -21,6 +21,7 @@ export const login = (userName, password) =>
 // ─── USER ────────────────────────────────────────────────────────────────────
 export const createUser = (userDTO) => api.post('/user/add', userDTO);
 export const getUserById = (userId) => api.get(`/user/${userId}`);
+
 export const updateUser = (id, userDTO) => api.put(`/user/update/${id}`, userDTO);
 export const deleteUser = (id) => api.delete(`/user/delete/${id}`);
 
@@ -29,6 +30,13 @@ export const getAllBooks = () => api.get('/user/books');
 export const searchBooks = (prefix) => api.get('/user/books/search', { params: { prefix } });
 export const getBooksByGenre = (genre) => api.get(`/user/books/genre/${genre}`);
 export const getBookById = (id) => api.get(`/user/books/${id}`);
+export const filterBooks = (params) => api.get('/user/books/filter', { params });
+export const getPopularBooks = () => api.get('/user/books/popular');
+export const getLatestBooks = () => api.get('/user/books/latest');
+export const getRecentBooks = () => api.get('/user/books/recent'); // top 30 by ID desc — safe for dashboards
+
+// ─── RECOMMENDATIONS ─────────────────────────────────────────────────────────
+export const getRecommendations = (userId) => api.get(`/recommend/${userId}`);
 
 // ─── ISSUED BOOKS ─────────────────────────────────────────────────────────────
 export const getIssuedBooks = (userId) => api.get(`/user/issued/${userId}`);
@@ -60,7 +68,7 @@ export const updateBook = (bookId, book) => api.put(`/librarian/book/${bookId}`,
 export const issueBook = (userId, bookId) =>
   api.post('/librarian/issue', null, { params: { userId, bookId } });
 export const returnBook = (issuedBookId) => api.put(`/librarian/return/${issuedBookId}`);
-export const getAllUsers = () => api.get('/librarian/users');
+export const getAllUsers = () => api.get('/user/all');
 export const getLibrarianUser = (userId) => api.get(`/librarian/user/${userId}`);
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────

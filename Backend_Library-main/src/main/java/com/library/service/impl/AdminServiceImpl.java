@@ -5,6 +5,7 @@ import com.library.repository.*;
 import com.library.service.AdminService;
 import com.library.util.QRGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +28,8 @@ public class AdminServiceImpl implements AdminService {
     FineRuleRepository fineRepo;
     @Autowired
     QRGenerator qrGenerator;
+    @Autowired private PasswordEncoder passwordEncoder;
+
     @Override
     public void deleteBookById(int bookId) {
         Book book = bookRepo.findById(bookId).get();
@@ -91,5 +94,23 @@ public class AdminServiceImpl implements AdminService {
             bookRepo.save(b);
         }
     }
+
+    @Override
+    public void generateQRForAllUser() {
+        List<User> list = userRepo.findAll();
+        for(User user: list){
+            String token = QRGenerator.generateToken();
+            user.setQrToken(token);
+
+            User saved = userRepo.save(user);
+
+            String qr = QRGenerator.generateUserQR(saved.getUserId(), token);
+            saved.setQrCode(qr);
+
+            userRepo.save(saved);
+        }
+    }
+
+
 
 }

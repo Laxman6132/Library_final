@@ -12,7 +12,7 @@ import java.util.UUID;
 @Component
 public class QRGenerator {
 
-    private static final String FOLDER_PATH = "src/main/resources/static/qr/";
+    private static final String FOLDER_PATH = "uploads/qr/";
     public static String generateBookQR(int bookId, String isbn) {
 
         try {
@@ -22,6 +22,9 @@ public class QRGenerator {
             String fullPath = FOLDER_PATH + fileName;
 
             File file = new File(fullPath);
+            if (!file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
             if (file.exists()) {
                 file.delete();
             }
@@ -49,6 +52,9 @@ public class QRGenerator {
             String fullPath = FOLDER_PATH + fileName;
 
             File file = new File(fullPath);
+            if (!file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
             if (file.exists()) {
                 file.delete();
             }

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
-  getAllBooks, getAllUsers, addBook, updateBook,
-  issueBook, returnBook, getIssuedBooks,
+  getRecentBooks, getAllUsers, addBook, updateBook,
+  issueBook, returnBook, getIssuedBooks, getBookById,
 } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
@@ -11,6 +11,28 @@ import {
   CheckCircle, Search, Edit2, ArrowRightLeft,
   RotateCcw, Camera, X, ChevronLeft
 } from 'lucide-react';
+
+/* ─── Genre helper: backend returns List<Genre> [{genreId, name}] or a plain string ─── */
+const getGenreString = (genre) => {
+  if (!genre) return '';
+  if (typeof genre === 'string') return genre;
+  if (Array.isArray(genre)) return genre.map(g => (typeof g === 'object' ? g.name : g)).join(', ');
+  if (typeof genre === 'object') return genre.name || '';
+  return String(genre);
+};
+
+const DISPLAY_LIMIT = 30;
+
+const getErrorMessage = (err, fallback) => {
+  if (err?.response?.data) {
+    const data = err.response.data;
+    if (typeof data === 'string') return data;
+    if (data.message) return data.message;
+    if (data.error) return data.error;
+    return JSON.stringify(data);
+  }
+  return fallback;
+};
 
 /* ─── tiny reusable QR Scanner component ─── */
 function QrScanner({ onScan, onClose, label }) {
@@ -32,7 +54,7 @@ function QrScanner({ onScan, onClose, label }) {
       () => {}
     ).catch(err => console.error('Camera start failed:', err));
     return () => {
-      scanner.isRunning() && scanner.stop().catch(() => {});
+      try { scanner.stop().catch(() => {}); } catch(e) {}
     };
   }, []);
 
@@ -110,9 +132,9 @@ export default function LibrarianDashboard() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [bRes, uRes] = await Promise.all([getAllBooks(), getAllUsers()]);
-      setBooks(bRes.data);
-      setUsers(uRes.data);
+      const [bRes, uRes] = await Promise.all([getRecentBooks(), getAllUsers()]);
+      setBooks(Array.isArray(bRes.data) ? bRes.data : []);
+      setUsers(Array.isArray(uRes.data) ? uRes.data : []);
     } catch { showToast('Failed to load data.', 'error'); }
     finally { setLoading(false); }
   };
@@ -139,13 +161,13 @@ export default function LibrarianDashboard() {
       fetchAll();
       setTab('books');
     } catch (err) {
-      showToast(err.response?.data || 'Failed to save book.', 'error');
+      showToast(getErrorMessage(err, 'Failed to save book.'), 'error');
     } finally { setBookLoading(false); }
   };
 
   const handleEditBook = (book) => {
     setEditingBook(book);
-    setBookForm({ title: book.title, description: book.description || '', isbn: book.isbn, totalCopies: book.totalCopies, availableCopies: book.availableCopies, genre: book.genre || '' });
+    setBookForm({ title: book.title, description: book.description || '', isbn: book.isbn, totalCopies: book.totalCopies, availableCopies: book.availableCopies, genre: getGenreString(book.genre) });
     setTab('add-book');
   };
 
@@ -155,10 +177,9 @@ export default function LibrarianDashboard() {
        Book:  "BOOK_ID:12|ISBN:978-x-xx"
   ── */
   const handleQrScan = useCallback((decoded) => {
-    setScannerTarget(prev => {
+    setScannerTarget(async (prev) => {
       if (!prev) return null;
 
-      // Parse pipe-delimited format: KEY:value|KEY:value
       const parseQR = (str) => {
         const obj = {};
         str.split('|').forEach(part => {
@@ -180,10 +201,11 @@ export default function LibrarianDashboard() {
         showToast(`User scanned: ${found?.userName ?? `#${uid}`}`);
       } else if (prev === 'issue-book') {
         const bid = bookId ?? parseInt(decoded, 10);
-        const found = books.find(b => b.bookId === bid);
+        const local = books.find(b => b.bookId === bid);
+        const info = local ?? await getBookById(bid).then(r => r.data).catch(() => ({ bookId: bid, title: `Book #${bid}` }));
         setIssueBookId(bid);
-        setIssueBookInfo(found ?? { bookId: bid, title: `Book #${bid}` });
-        showToast(`Book scanned: ${found?.title ?? `#${bid}`}`);
+        setIssueBookInfo(info);
+        showToast(`Book scanned: ${info.title}`);
       } else if (prev === 'return-user') {
         const uid = userId ?? parseInt(decoded, 10);
         const found = users.find(u => u.userId === uid);
@@ -192,10 +214,11 @@ export default function LibrarianDashboard() {
         showToast(`User scanned: ${found?.userName ?? `#${uid}`}`);
       } else if (prev === 'return-book') {
         const bid = bookId ?? parseInt(decoded, 10);
-        const found = books.find(b => b.bookId === bid);
+        const local = books.find(b => b.bookId === bid);
+        const info = local ?? await getBookById(bid).then(r => r.data).catch(() => ({ bookId: bid, title: `Book #${bid}` }));
         setReturnBookId(bid);
-        setReturnBookInfo(found ?? { bookId: bid, title: `Book #${bid}` });
-        showToast(`Book scanned: ${found?.title ?? `#${bid}`}`);
+        setReturnBookInfo(info);
+        showToast(`Book scanned: ${info.title}`);
       }
       return null; // close scanner
     });
@@ -212,7 +235,7 @@ export default function LibrarianDashboard() {
       setIssueUserInfo(null); setIssueBookInfo(null);
       fetchAll();
     } catch (err) {
-      showToast(err.response?.data || 'Issue failed.', 'error');
+      showToast(getErrorMessage(err, 'Issue failed.'), 'error');
     } finally { setIssueLoading(false); }
   };
 
@@ -238,18 +261,24 @@ export default function LibrarianDashboard() {
       setReturnUserInfo(null); setReturnBookInfo(null);
       fetchAll();
     } catch (err) {
-      showToast(err.response?.data || 'Return failed.', 'error');
+      showToast(getErrorMessage(err, 'Return failed.'), 'error');
     } finally { setReturnLoading(false); }
   };
 
-  const filteredBooks = books.filter(b =>
-    b.title?.toLowerCase().includes(bookSearch.toLowerCase()) ||
-    b.isbn?.toLowerCase().includes(bookSearch.toLowerCase()) ||
-    b.genre?.toLowerCase().includes(bookSearch.toLowerCase())
+  const allBooks = Array.isArray(books) ? books : [];
+  const isBookSearchActive = bookSearch.trim().length > 0;
+
+  // We only have 30 books — filter all of them always
+  const filteredBooks = allBooks.filter(b =>
+    !bookSearch.trim() ||
+    (b.title || '').toLowerCase().includes(bookSearch.toLowerCase()) ||
+    (b.isbn || '').toLowerCase().includes(bookSearch.toLowerCase()) ||
+    getGenreString(b.genre).toLowerCase().includes(bookSearch.toLowerCase())
   );
-  const filteredUsers = users.filter(u =>
-    u.userName?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    u.emailId?.toLowerCase().includes(userSearch.toLowerCase())
+
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(u =>
+    (u.userName || '').toLowerCase().includes(userSearch.toLowerCase()) ||
+    (u.emailId || '').toLowerCase().includes(userSearch.toLowerCase())
   );
 
   /* ─────────── Styles ─────────── */
@@ -258,7 +287,7 @@ export default function LibrarianDashboard() {
   const labelStyle = { fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 };
 
   return (
-    <div style={{ paddingTop: 72, minHeight: '100vh', background: '#f0f4f8' }}>
+    <div style={{ paddingTop: 10, minHeight: '100vh', background: 'transparent' }}>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       {scannerTarget && (
         <QrScanner
@@ -275,7 +304,7 @@ export default function LibrarianDashboard() {
       )}
 
       {/* ── Header ── */}
-      <div style={{ background: 'linear-gradient(135deg,#0f1c3f 0%,#1a56db 100%)', paddingBottom: 0 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', borderRadius: '24px', margin: '0 1rem', overflow: 'hidden' }}>
         <div className="container" style={{ paddingTop: '1.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.25rem' }}>
             <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '0.5rem 0.75rem' }}>
@@ -286,7 +315,7 @@ export default function LibrarianDashboard() {
                 Librarian Dashboard
               </h2>
               <small style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem' }}>
-                {books.length} books · {users.length} users
+                {(Array.isArray(books) ? books : []).length} books · {(Array.isArray(users) ? users : []).length} users
               </small>
             </div>
           </div>
@@ -299,12 +328,12 @@ export default function LibrarianDashboard() {
                 if (t.key !== 'add-book') resetBookForm();
               }}
                 style={{
-                  border: 'none', borderRadius: '10px 10px 0 0',
-                  padding: '0.55rem 1.1rem',
-                  fontWeight: 600, fontSize: '0.82rem',
+                  border: 'none', borderRadius: '12px 12px 0 0',
+                  padding: '0.8rem 1.25rem',
+                  fontWeight: 600, fontSize: '0.95rem',
                   display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
                   background: tab === t.key ? '#fff' : 'rgba(255,255,255,0.12)',
-                  color: tab === t.key ? '#1a56db' : 'rgba(255,255,255,0.85)',
+                  color: tab === t.key ? 'var(--primary)' : 'rgba(255,255,255,0.85)',
                   transition: 'all 0.18s',
                 }}>
                 {t.icon}{t.label}
@@ -365,7 +394,7 @@ export default function LibrarianDashboard() {
                         {editingBook?.qrCode && (
                           <div style={{ marginTop: 14, padding: '0.75rem', background: '#f0f4ff', borderRadius: 10, textAlign: 'center' }}>
                             <small style={{ color: '#6b7280', display: 'block', marginBottom: 6 }}>Current Book QR</small>
-                            <img src={`data:image/png;base64,${editingBook.qrCode}`} alt="QR"
+                            <img src={`http://localhost:8080${editingBook.qrCode}`} alt="QR"
                               style={{ width: 90, height: 90, borderRadius: 8, padding: 4, background: '#fff' }} />
                           </div>
                         )}
@@ -411,8 +440,17 @@ export default function LibrarianDashboard() {
                     </button>
                   </div>
                 </div>
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle mb-0">
+                 <div className="table-responsive">
+                  {/* Info banner */}
+                  <div style={{
+                    background: '#fffbeb', borderBottom: '1px solid #fde68a',
+                    padding: '7px 16px', fontSize: '0.8rem', color: '#92400e',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <span style={{ fontWeight: 600 }}>Showing the 30 most recently added books.</span>
+                    <span style={{ color: '#a16207' }}>Use the search to find any other book.</span>
+                  </div>
+                   <table className="table table-hover align-middle mb-0">
                     <thead style={{ background: '#f8fafc' }}>
                       <tr>
                         {['ID', 'Title', 'ISBN', 'Genre', 'Copies', 'Available', 'QR', 'Edit'].map(h => (
@@ -430,7 +468,7 @@ export default function LibrarianDashboard() {
                           <td style={{ fontWeight: 600, fontSize: '0.875rem' }}>{b.title}</td>
                           <td style={{ fontSize: '0.78rem', color: '#9ca3af' }}>{b.isbn}</td>
                           <td>
-                            {b.genre ? <span style={{ background: '#e0e9ff', color: '#1a56db', borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 600 }}>{b.genre}</span> : '—'}
+                            {getGenreString(b.genre) ? <span style={{ background: '#e0e9ff', color: '#1a56db', borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 600 }}>{getGenreString(b.genre)}</span> : '—'}
                           </td>
                           <td style={{ fontSize: '0.875rem' }}>{b.totalCopies}</td>
                           <td>
@@ -440,7 +478,7 @@ export default function LibrarianDashboard() {
                           </td>
                           <td>
                             {b.qrCode
-                              ? <img src={`data:image/png;base64,${b.qrCode}`} alt="QR" style={{ width: 34, height: 34, borderRadius: 4, background: '#f8fafc', padding: 2 }} />
+                              ? <img src={`http://localhost:8080${b.qrCode}`} alt="QR" style={{ width: 34, height: 34, borderRadius: 4, background: '#f8fafc', padding: 2 }} />
                               : <QrCode size={16} color="#d1d5db" />}
                           </td>
                           <td>
@@ -503,7 +541,7 @@ export default function LibrarianDashboard() {
                           </td>
                           <td>
                             {u.qrCode
-                              ? <img src={`data:image/png;base64,${u.qrCode}`} alt="QR" style={{ width: 34, height: 34, borderRadius: 4, background: '#f8fafc', padding: 2 }} />
+                              ? <img src={`http://localhost:8080${u.qrCode}`} alt="QR" style={{ width: 34, height: 34, borderRadius: 4, background: '#f8fafc', padding: 2 }} />
                               : <QrCode size={16} color="#d1d5db" />}
                           </td>
                         </tr>

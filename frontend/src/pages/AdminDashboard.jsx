@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
-  getAllBooks, getAllUsers, addBook, updateBook, deleteBook, deleteAllBooks,
+  getRecentBooks, getAllUsers, addBook, updateBook, deleteBook, deleteAllBooks,
   issueBook, returnBook, getIssuedBooks,
   deleteUser, makeLibrarian, makeAdmin,
   updateFineRule, regenerateUserQR, generateQRForAllBooks,
+  getBookById,
 } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
@@ -32,7 +33,7 @@ function QrScanner({ label, onScan, onClose }) {
       (decoded) => { onScan(decoded); },
       () => { }
     ).catch(err => console.error('Camera error:', err));
-    return () => { scanner.isRunning() && scanner.stop().catch(() => { }); };
+    return () => { try { scanner.stop().catch(() => { }); } catch (e) { } };
   }, []);
 
   return (
@@ -110,7 +111,29 @@ const card = { borderRadius: 16, border: 'none', boxShadow: '0 2px 16px rgba(0,0
 const inp = { borderRadius: 10, border: 'none', background: '#f1f5f9' };
 const lbl = { fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 };
 const th = { fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', padding: '10px 14px', border: 'none', background: '#f8fafc' };
-const accent = '#7c3aed';
+const accent = 'var(--primary)';
+
+/* ─── Genre helper: backend returns List<Genre> [{genreId, name}] or a plain string ─── */
+const getGenreString = (genre) => {
+  if (!genre) return '';
+  if (typeof genre === 'string') return genre;
+  if (Array.isArray(genre)) return genre.map(g => (typeof g === 'object' ? g.name : g)).join(', ');
+  if (typeof genre === 'object') return genre.name || '';
+  return String(genre);
+};
+
+const getErrorMessage = (err, fallback) => {
+  if (err?.response?.data) {
+    const data = err.response.data;
+    if (typeof data === 'string') return data;
+    if (data.message) return data.message;
+    if (data.error) return data.error;
+    return JSON.stringify(data);
+  }
+  return fallback;
+};
+
+const DISPLAY_LIMIT = 30; // matches server-side top-30 limit
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState('add-book');
@@ -164,14 +187,12 @@ export default function AdminDashboard() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [bRes, uRes] = await Promise.all([getAllBooks(), getAllUsers()]);
+      const [bRes, uRes] = await Promise.all([getRecentBooks(), getAllUsers()]);
       // Guard: backend might return an error object or paginated wrapper instead of array
       const booksData = Array.isArray(bRes.data) ? bRes.data
         : Array.isArray(bRes.data?.content) ? bRes.data.content : [];
       const usersData = Array.isArray(uRes.data) ? uRes.data
         : Array.isArray(uRes.data?.content) ? uRes.data.content : [];
-      if (!Array.isArray(bRes.data)) console.warn('getAllBooks returned non-array:', bRes.data);
-      if (!Array.isArray(uRes.data)) console.warn('getAllUsers returned non-array:', uRes.data);
       setBooks(booksData);
       setUsers(usersData);
     } catch (err) {
@@ -191,13 +212,13 @@ export default function AdminDashboard() {
       if (editingBook) { await updateBook(editingBook.bookId, bookForm); showToast('Book updated!'); setEditingBook(null); }
       else { await addBook(bookForm); showToast('Book added!'); }
       resetBookForm(); fetchAll(); setTab('books');
-    } catch (err) { showToast(err.response?.data || 'Failed to save book.', 'error'); }
+    } catch (err) { showToast(getErrorMessage(err, 'Failed to save book.'), 'error'); }
     finally { setBookLoading(false); }
   };
 
   const handleEditBook = (book) => {
     setEditingBook(book);
-    setBookForm({ title: book.title, description: book.description || '', isbn: book.isbn, totalCopies: book.totalCopies, availableCopies: book.availableCopies, genre: book.genre || '' });
+    setBookForm({ title: book.title, description: book.description || '', isbn: book.isbn, totalCopies: book.totalCopies, availableCopies: book.availableCopies, genre: getGenreString(book.genre) });
     setTab('add-book');
   };
 
@@ -253,7 +274,7 @@ export default function AdminDashboard() {
   };
 
   const handleQrScan = useCallback((decoded) => {
-    setScannerTarget(prev => {
+    setScannerTarget(async (prev) => {
       if (!prev) return null;
       const parsed = parseQR(decoded);
       const userId = parsed['USER_ID'] ? parseInt(parsed['USER_ID'], 10) : null;
@@ -266,9 +287,11 @@ export default function AdminDashboard() {
         showToast(`User scanned: ${found?.userName ?? `#${uid}`}`);
       } else if (prev === 'issue-book') {
         const bid = bookId ?? parseInt(decoded, 10);
-        const found = books.find(b => b.bookId === bid);
-        setIssueBookId(bid); setIssueBookInfo(found ?? { bookId: bid, title: `Book #${bid}` });
-        showToast(`Book scanned: ${found?.title ?? `#${bid}`}`);
+        // Look up from local list first; if not present (book outside top-30), fetch by ID
+        const local = books.find(b => b.bookId === bid);
+        const info = local ?? await getBookById(bid).then(r => r.data).catch(() => ({ bookId: bid, title: `Book #${bid}` }));
+        setIssueBookId(bid); setIssueBookInfo(info);
+        showToast(`Book scanned: ${info.title}`);
       } else if (prev === 'return-user') {
         const uid = userId ?? parseInt(decoded, 10);
         const found = users.find(u => u.userId === uid);
@@ -276,9 +299,10 @@ export default function AdminDashboard() {
         showToast(`User scanned: ${found?.userName ?? `#${uid}`}`);
       } else if (prev === 'return-book') {
         const bid = bookId ?? parseInt(decoded, 10);
-        const found = books.find(b => b.bookId === bid);
-        setReturnBookId(bid); setReturnBookInfo(found ?? { bookId: bid, title: `Book #${bid}` });
-        showToast(`Book scanned: ${found?.title ?? `#${bid}`}`);
+        const local = books.find(b => b.bookId === bid);
+        const info = local ?? await getBookById(bid).then(r => r.data).catch(() => ({ bookId: bid, title: `Book #${bid}` }));
+        setReturnBookId(bid); setReturnBookInfo(info);
+        showToast(`Book scanned: ${info.title}`);
       }
       return null;
     });
@@ -293,7 +317,7 @@ export default function AdminDashboard() {
       showToast(typeof res.data === 'string' ? res.data : 'Book issued!');
       setIssueUserId(null); setIssueBookId(null); setIssueUserInfo(null); setIssueBookInfo(null);
       fetchAll();
-    } catch (err) { showToast(err.response?.data || 'Issue failed.', 'error'); }
+    } catch (err) { showToast(getErrorMessage(err, 'Issue failed.'), 'error'); }
     finally { setIssueLoading(false); }
   };
 
@@ -309,7 +333,7 @@ export default function AdminDashboard() {
       showToast(typeof res.data === 'string' ? res.data : 'Book returned!');
       setReturnUserId(null); setReturnBookId(null); setReturnUserInfo(null); setReturnBookInfo(null);
       fetchAll();
-    } catch (err) { showToast(err.response?.data || 'Return failed.', 'error'); }
+    } catch (err) { showToast(getErrorMessage(err, 'Return failed.'), 'error'); }
     finally { setReturnLoading(false); }
   };
 
@@ -317,7 +341,7 @@ export default function AdminDashboard() {
   const handleFineRule = async (e) => {
     e.preventDefault(); setFineLoading(true);
     try { await updateFineRule(parseInt(fineRuleId), fineRuleData); showToast('Fine rule updated!'); }
-    catch (err) { showToast(err.response?.data || 'Update failed.', 'error'); }
+    catch (err) { showToast(getErrorMessage(err, 'Update failed.'), 'error'); }
     finally { setFineLoading(false); }
   };
 
@@ -342,15 +366,22 @@ export default function AdminDashboard() {
   );
 
   /* ── Filtered lists ── */
-  const filteredBooks = books.filter(b =>
-    b.title?.toLowerCase().includes(bookSearch.toLowerCase()) ||
-    b.isbn?.toLowerCase().includes(bookSearch.toLowerCase()) ||
-    b.genre?.toLowerCase().includes(bookSearch.toLowerCase())
+  const allBooks = Array.isArray(books) ? books : [];
+  const isBookSearchActive = bookSearch.trim().length > 0;
+
+  // We only have 30 books — filter all of them always
+  const filteredBooks = allBooks.filter(b =>
+    !bookSearch.trim() ||
+    (b.title || '').toLowerCase().includes(bookSearch.toLowerCase()) ||
+    (b.isbn || '').toLowerCase().includes(bookSearch.toLowerCase()) ||
+    getGenreString(b.genre).toLowerCase().includes(bookSearch.toLowerCase())
   );
-  const filteredUsers = users.filter(u =>
-    u.userName?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    u.emailId?.toLowerCase().includes(userSearch.toLowerCase())
+
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(u =>
+    (u.userName || '').toLowerCase().includes(userSearch.toLowerCase()) ||
+    (u.emailId || '').toLowerCase().includes(userSearch.toLowerCase())
   );
+
 
   /* ── QR scan card helper ── */
   const ScanCard = ({ info, onScan, onClear, scanKey, labelTitle, iconOverride, color = accent }) => (
@@ -383,7 +414,7 @@ export default function AdminDashboard() {
 
   /* ════════ RENDER ════════ */
   return (
-    <div style={{ paddingTop: 72, minHeight: '100vh', background: '#f0f0f8' }}>
+    <div style={{ paddingTop: 10, minHeight: '100vh', background: 'transparent' }}>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       {confirm && <ConfirmModal message={confirm.message} danger={confirm.danger} onConfirm={confirm.onConfirm} onCancel={() => setConfirm(null)} />}
       {scannerTarget && (
@@ -401,7 +432,7 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Header ── */}
-      <div style={{ background: 'linear-gradient(135deg,#1e0050 0%,#7c3aed 100%)', paddingBottom: 0 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', borderRadius: '24px', margin: '0 1rem', overflow: 'hidden' }}>
         <div className="container" style={{ paddingTop: '1.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.25rem' }}>
             <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '0.5rem 0.75rem' }}>
@@ -412,9 +443,9 @@ export default function AdminDashboard() {
                 Admin Dashboard
               </h2>
               <small style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem' }}>
-                {books.length} books · {users.length} users ·{' '}
-                {users.filter(u => u.role === 'LIBRARIAN').length} librarians ·{' '}
-                {users.filter(u => u.role === 'ADMIN').length} admins
+                {(Array.isArray(books) ? books : []).length} books · {(Array.isArray(users) ? users : []).length} users ·{' '}
+                {(Array.isArray(users) ? users : []).filter(u => u.role === 'LIBRARIAN').length} librarians ·{' '}
+                {(Array.isArray(users) ? users : []).filter(u => u.role === 'ADMIN').length} admins
               </small>
             </div>
           </div>
@@ -424,9 +455,9 @@ export default function AdminDashboard() {
             {TABS.map(t => (
               <button key={t.key} onClick={() => { setTab(t.key); if (t.key !== 'add-book') resetBookForm(); }}
                 style={{
-                  border: 'none', borderRadius: '10px 10px 0 0',
-                  padding: '0.5rem 1rem', fontWeight: 600, fontSize: '0.8rem',
-                  display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+                  border: 'none', borderRadius: '12px 12px 0 0',
+                  padding: '0.8rem 1.25rem', fontWeight: 600, fontSize: '0.95rem',
+                  display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                   background: tab === t.key ? '#fff' : 'rgba(255,255,255,0.12)',
                   color: tab === t.key ? accent : 'rgba(255,255,255,0.85)',
                   transition: 'all .15s',
@@ -487,7 +518,7 @@ export default function AdminDashboard() {
                         {editingBook?.qrCode && (
                           <div style={{ marginTop: 12, padding: '0.75rem', background: '#f5f3ff', borderRadius: 10, textAlign: 'center' }}>
                             <small style={{ color: '#6b7280', display: 'block', marginBottom: 6 }}>Current Book QR</small>
-                            <img src={`data:image/png;base64,${editingBook.qrCode}`} alt="QR"
+                            <img src={`http://localhost:8080${editingBook.qrCode}`} alt="QR"
                               style={{ width: 88, height: 88, borderRadius: 8, padding: 4, background: '#fff' }} />
                           </div>
                         )}
@@ -536,6 +567,15 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="table-responsive">
+                  {/* Info banner */}
+                  <div style={{
+                    background: '#fffbeb', borderBottom: '1px solid #fde68a',
+                    padding: '7px 16px', fontSize: '0.8rem', color: '#92400e',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <span style={{ fontWeight: 600 }}>Showing the 30 most recently added books.</span>
+                    <span style={{ color: '#a16207' }}>Use the search to find any other book.</span>
+                  </div>
                   <table className="table table-hover align-middle mb-0">
                     <thead>
                       <tr>{['ID', 'Title', 'ISBN', 'Genre', 'Copies', 'Avail', 'QR', 'Edit', 'Delete'].map(h => <th key={h} style={th}>{h}</th>)}</tr>
@@ -547,10 +587,10 @@ export default function AdminDashboard() {
                           <td style={{ fontSize: '0.77rem', color: '#9ca3af' }}>#{b.bookId}</td>
                           <td style={{ fontWeight: 600, fontSize: '0.875rem' }}>{b.title}</td>
                           <td style={{ fontSize: '0.77rem', color: '#9ca3af' }}>{b.isbn}</td>
-                          <td>{b.genre ? <span style={{ background: '#ede9fe', color: accent, borderRadius: 6, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700 }}>{b.genre}</span> : '—'}</td>
+                          <td>{getGenreString(b.genre) ? <span style={{ background: '#ede9fe', color: accent, borderRadius: 6, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700 }}>{getGenreString(b.genre)}</span> : '—'}</td>
                           <td style={{ fontSize: '0.875rem' }}>{b.totalCopies}</td>
                           <td><span style={{ background: b.availableCopies > 0 ? '#dcfce7' : '#fee2e2', color: b.availableCopies > 0 ? '#16a34a' : '#dc2626', borderRadius: 6, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700 }}>{b.availableCopies}</span></td>
-                          <td>{b.qrCode ? <img src={`data:image/png;base64,${b.qrCode}`} alt="QR" style={{ width: 32, height: 32, borderRadius: 4, background: '#f8fafc', padding: 2 }} /> : <QrCode size={15} color="#d1d5db" />}</td>
+                          <td>{b.qrCode ? <img src={`http://localhost:8080${b.qrCode}`} alt="QR" style={{ width: 32, height: 32, borderRadius: 4, background: '#f8fafc', padding: 2 }} /> : <QrCode size={15} color="#d1d5db" />}</td>
                           <td>
                             <button className="btn btn-sm btn-outline-secondary" style={{ borderRadius: 7, padding: '3px 8px' }} onClick={() => handleEditBook(b)}>
                               <Edit2 size={12} />
@@ -606,7 +646,7 @@ export default function AdminDashboard() {
                           <td style={{ fontSize: '0.875rem' }}>
                             {u.fine > 0 ? <span style={{ color: '#dc2626', fontWeight: 700 }}>₹{u.fine?.toFixed(2)}</span> : <span style={{ color: '#9ca3af' }}>₹0</span>}
                           </td>
-                          <td>{u.qrCode ? <img src={`data:image/png;base64,${u.qrCode}`} alt="QR" style={{ width: 32, height: 32, borderRadius: 4, background: '#f8fafc', padding: 2 }} /> : <QrCode size={15} color="#d1d5db" />}</td>
+                          <td>{u.qrCode ? <img src={`http://localhost:8080${u.qrCode}`} alt="QR" style={{ width: 32, height: 32, borderRadius: 4, background: '#f8fafc', padding: 2 }} /> : <QrCode size={15} color="#d1d5db" />}</td>
                           <td>
                             <button className="btn btn-sm btn-danger" style={{ borderRadius: 7, padding: '3px 8px' }} onClick={() => handleDeleteUser(u)}>
                               <UserX size={13} />
@@ -720,9 +760,9 @@ export default function AdminDashboard() {
                 {/* Role summary pills */}
                 <div style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   {[
-                    { label: 'Users', count: users.filter(u => u.role === 'USER').length, bg: '#ede9fe', color: accent },
-                    { label: 'Librarians', count: users.filter(u => u.role === 'LIBRARIAN').length, bg: '#fef9c3', color: '#92400e' },
-                    { label: 'Admins', count: users.filter(u => u.role === 'ADMIN').length, bg: '#fee2e2', color: '#dc2626' },
+                    { label: 'Users', count: (Array.isArray(users) ? users : []).filter(u => u.role === 'USER').length, bg: '#ede9fe', color: accent },
+                    { label: 'Librarians', count: (Array.isArray(users) ? users : []).filter(u => u.role === 'LIBRARIAN').length, bg: '#fef9c3', color: '#92400e' },
+                    { label: 'Admins', count: (Array.isArray(users) ? users : []).filter(u => u.role === 'ADMIN').length, bg: '#fee2e2', color: '#dc2626' },
                   ].map(r => (
                     <span key={r.label} style={{ background: r.bg, color: r.color, borderRadius: 8, padding: '4px 14px', fontSize: '0.8rem', fontWeight: 700 }}>
                       {r.label}: {r.count}
@@ -866,7 +906,7 @@ export default function AdminDashboard() {
                           return u?.qrCode ? (
                             <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                               <small style={{ color: '#6b7280', display: 'block', marginBottom: 6 }}>Current QR</small>
-                              <img src={`data:image/png;base64,${u.qrCode}`} alt="QR"
+                              <img src={`http://localhost:8080${u.qrCode}`} alt="QR"
                                 style={{ width: 80, height: 80, borderRadius: 8, background: '#fff', padding: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
                             </div>
                           ) : null;
@@ -899,7 +939,7 @@ export default function AdminDashboard() {
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: '1rem', background: '#f0fdf4', borderRadius: 10, padding: '0.7rem 1rem' }}>
                         <BookOpen size={18} color="#16a34a" />
                         <span style={{ fontSize: '0.85rem', color: '#374151' }}>
-                          <strong>{books.length}</strong> books · {books.filter(b => b.qrCode).length} already have QR
+                          <strong>{(Array.isArray(books) ? books : []).length}</strong> books · {(Array.isArray(books) ? books : []).filter(b => b.qrCode).length} already have QR
                         </span>
                       </div>
                       <button className="btn btn-success fw-semibold" style={{ borderRadius: 10 }}

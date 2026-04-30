@@ -18,21 +18,21 @@ export default function Navbar({ onToggleSidebar }) {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm" style={{ background: 'linear-gradient(135deg, #0a1628 0%, #0d6efd 100%)' }}>
-      <div className="container-fluid px-3">
-        {/* Sidebar toggle for librarian/admin */}
-        {(isLibrarian() || isAdmin()) && (
-          <button className="btn btn-link text-white me-2 p-0" onClick={onToggleSidebar}>
-            <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <nav className="navbar navbar-expand-lg sticky-top shadow-sm" style={{ background: '#ffffff', zIndex: 1040 }}>
+      <div className="container-fluid px-4 py-1">
+        {/* Sidebar toggle for all */}
+        {auth && (
+          <button className="btn btn-link me-3 p-0" style={{ color: '#57534e' }} onClick={onToggleSidebar}>
+            <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
         )}
 
         {/* Brand */}
-        <a className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-5" href={getDashboardPath()}>
-          <BookOpen size={24} className="text-warning" />
-          <span>LibraryMS</span>
+        <a className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-4 me-4" href={auth ? "/home" : "/"}>
+          <BookOpen size={28} style={{ color: 'var(--primary)' }} />
+          <span>Scanexus</span>
         </a>
 
         <button className="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
@@ -41,7 +41,12 @@ export default function Navbar({ onToggleSidebar }) {
 
         <div className="collapse navbar-collapse" id="navbarMain">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-            {auth && !isLibrarian() && (
+            {auth && (
+              <li className="nav-item">
+                <a className="nav-link" href="/home"><BookOpen size={16} className="me-1" />Home</a>
+              </li>
+            )}
+            {auth && !isLibrarian() && !isAdmin() && (
               <>
                 <li className="nav-item">
                   <a className="nav-link" href="/dashboard"><LayoutDashboard size={16} className="me-1" />Dashboard</a>
@@ -50,6 +55,11 @@ export default function Navbar({ onToggleSidebar }) {
                   <a className="nav-link" href="/issued"><BookMarked size={16} className="me-1" />My Books</a>
                 </li>
               </>
+            )}
+            {auth && !isLibrarian() && isAdmin() && (
+              <li className="nav-item">
+                <a className="nav-link" href="/dashboard"><LayoutDashboard size={16} className="me-1" />User View</a>
+              </li>
             )}
             {isLibrarian() && (
               <li className="nav-item">
@@ -64,29 +74,29 @@ export default function Navbar({ onToggleSidebar }) {
           </ul>
 
           {auth ? (
-            <div className="d-flex align-items-center gap-3">
-              <div className="d-flex align-items-center gap-2">
-                <div className="rounded-circle bg-warning d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
-                  <User size={16} className="text-dark" />
+            <div className="d-flex align-items-center gap-4 ms-auto">
+              <div className="d-flex align-items-center gap-3">
+                <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: 40, height: 40, background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                  <User size={20} />
                 </div>
-                <div className="d-none d-md-block text-white">
-                  <div className="fw-semibold lh-1" style={{ fontSize: '0.85rem' }}>{userProfile?.userName || 'User'}</div>
-                  <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{auth.role}</div>
+                <div className="d-none d-md-block text-dark">
+                  <div className="fw-semibold lh-1 text-dark" style={{ fontSize: '0.95rem' }}>{userProfile?.userName || 'User'}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#78716c' }}>{auth.role}</div>
                 </div>
               </div>
               <div className="d-flex gap-2">
-                <Link to="/profile" className="btn btn-sm btn-light rounded-pill px-3 fw-semibold">
-                  <User size={14} className="me-1" /> Profile
+                <Link to="/profile" className="btn btn-sm text-dark px-3 fw-semibold" style={{ background: '#f5f5f4', borderRadius: '12px' }}>
+                  <User size={16} className="me-1" /> Profile
                 </Link>
-                <button className="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold" onClick={handleLogout}>
-                  <LogOut size={14} className="me-1" /> Logout
+                <button className="btn btn-sm px-3 fw-semibold" style={{ background: 'var(--primary)', color: '#fff', borderRadius: '12px' }} onClick={handleLogout}>
+                  <LogOut size={16} className="me-1" /> Logout
                 </button>
               </div>
             </div>
           ) : (
-            <div className="d-flex gap-2">
-              <a href="/login" className="btn btn-sm btn-outline-light rounded-pill px-3">Login</a>
-              <a href="/register" className="btn btn-sm btn-warning rounded-pill px-3 text-dark fw-semibold">Sign Up</a>
+            <div className="d-flex gap-3 ms-auto">
+              <a href="/login" className="btn btn-outline-secondary rounded-pill px-4" style={{ fontWeight: 600 }}>Login</a>
+              <a href="/register" className="btn rounded-pill px-4 text-white fw-bold" style={{ background: 'var(--primary)' }}>Sign Up</a>
             </div>
           )}
         </div>

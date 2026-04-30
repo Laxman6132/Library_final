@@ -16,7 +16,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @PostMapping("/bcrptAll")
+    @PutMapping("/bcrptAll")
     public void Bcrpt(){
         userService.bcrpt();
     }
@@ -40,6 +40,34 @@ public class UserController {
     @GetMapping("/books/{id}")
     public ResponseEntity<BookDTO> getBookById(@PathVariable int id) {
         return ResponseEntity.ok(userService.getBookById(id));
+    }
+
+    @GetMapping("/books/popular")
+    public ResponseEntity<List<BookDTO>> getPopularBooks() {
+        return ResponseEntity.ok(userService.popularBooks());
+    }
+
+    @GetMapping("/books/latest")
+    public ResponseEntity<List<BookDTO>> getLatestBooks() {
+        return ResponseEntity.ok(userService.latestBooks());
+    }
+
+    @GetMapping("/books/recent")
+    public ResponseEntity<List<BookDTO>> getRecentBooks() {
+        return ResponseEntity.ok(userService.recentBooks());
+    }
+
+    @GetMapping("/books/filter")
+    public ResponseEntity<List<BookDTO>> filterBooks(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(required = false) Integer minPages,
+            @RequestParam(required = false) Integer maxPages,
+            @RequestParam(required = false) Integer availableCopies
+    ) {
+        return ResponseEntity.ok(userService.filterBooks(title, author, genre, minRating, minPages, maxPages, availableCopies));
     }
 
     // ================= WAITING LIST =================
@@ -125,6 +153,11 @@ public class UserController {
     }
 
     // ================= USER =================
+
+    @GetMapping("/all")
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
 
     @PostMapping("/add")
     public ResponseEntity<String> addUser(@RequestBody UserDTO userDTO) {

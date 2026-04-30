@@ -2,6 +2,7 @@ package com.library.dto;
 
 import com.library.dto.FavouriteDTO;
 import com.library.dto.ReviewDTO;
+import com.library.entity.Genre;
 
 import java.util.List;
 
@@ -13,8 +14,12 @@ public class BookDTO {
     private String isbn;
     private int totalCopies;
     private int availableCopies;
-    private String genre;
+    private List<Genre> genre;
     private String qrCode;
+    
+    private String author;
+    private int pages;
+    private String image;
 
     // Only lightweight data
     private List<ReviewDTO> reviews;
@@ -31,6 +36,9 @@ public class BookDTO {
                 ", availableCopies=" + availableCopies +
                 ", genre='" + genre + '\'' +
                 ", qrCode='" + qrCode + '\'' +
+                ", author='" + author + '\'' +
+                ", pages=" + pages +
+                ", image='" + image + '\'' +
                 ", reviews=" + reviews +
                 ", favourites=" + favourites +
                 '}';
@@ -39,7 +47,7 @@ public class BookDTO {
     public BookDTO() {
     }
 
-    public BookDTO(int bookId, String title, String description, String isbn, int totalCopies, int availableCopies, String genre, String qrCode, List<ReviewDTO> reviews, List<FavouriteDTO> favourites) {
+    public BookDTO(int bookId, String title, String description, String isbn, int totalCopies, int availableCopies, List<Genre> genre, String qrCode, String author, int pages, String image, List<ReviewDTO> reviews, List<FavouriteDTO> favourites) {
         this.bookId = bookId;
         this.title = title;
         this.description = description;
@@ -48,6 +56,9 @@ public class BookDTO {
         this.availableCopies = availableCopies;
         this.genre = genre;
         this.qrCode = qrCode;
+        this.author = author;
+        this.pages = pages;
+        this.image = image;
         this.reviews = reviews;
         this.favourites = favourites;
     }
@@ -100,11 +111,11 @@ public class BookDTO {
         this.availableCopies = availableCopies;
     }
 
-    public String getGenre() {
+    public List<Genre> getGenre() {
         return genre;
     }
 
-    public void setGenre(String genre) {
+    public void setGenre(List<Genre> genre) {
         this.genre = genre;
     }
 
@@ -130,5 +141,29 @@ public class BookDTO {
 
     public void setFavourites(List<FavouriteDTO> favourites) {
         this.favourites = favourites;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public int getPages() {
+        return pages;
+    }
+
+    public void setPages(int pages) {
+        this.pages = pages;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
     }
 }

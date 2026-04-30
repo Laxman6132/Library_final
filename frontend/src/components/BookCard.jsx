@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Clock, Star, QrCode, Info } from 'lucide-react';
+import { Heart, Clock, Star, QrCode, Info, BookOpen } from 'lucide-react';
 import { addFavourite, addToWaitingList } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -43,13 +43,19 @@ export default function BookCard({ book, onToast }) {
 
       {/* QR / Cover Area */}
       <div className="d-flex align-items-center justify-content-center"
-        style={{ background: 'linear-gradient(135deg, #0a1628 0%, #1a3a6b 100%)', height: 160, position: 'relative' }}>
-        {book.qrCode ? (
-          <img src={`data:image/png;base64,${book.qrCode}`} alt="Book QR" style={{ height: 120, width: 120, objectFit: 'contain', borderRadius: 8, background: '#fff', padding: 4 }} />
+        style={{ background: '#f8f9fa', height: 200, position: 'relative', borderBottom: '1px solid #eee' }}>
+        {book.image ? (
+          <img src={book.image.startsWith('http') ? book.image : `http://localhost:8080${book.image}`} 
+               alt={book.title} 
+               style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
+        ) : book.qrCode ? (
+          <div style={{ background: 'linear-gradient(135deg, #0a1628 0%, #1a3a6b 100%)', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src={`http://localhost:8080${book.qrCode}`} alt="Book QR" style={{ height: 120, width: 120, objectFit: 'contain', borderRadius: 8, background: '#fff', padding: 4 }} />
+          </div>
         ) : (
-          <div className="d-flex flex-column align-items-center opacity-50">
-            <QrCode size={48} color="#fff" />
-            <small className="text-white mt-1" style={{ fontSize: '0.7rem' }}>No QR</small>
+          <div className="d-flex flex-column align-items-center text-muted opacity-50">
+            <BookOpen size={48} />
+            <small className="mt-1" style={{ fontSize: '0.7rem' }}>No Cover</small>
           </div>
         )}
         <span className="badge position-absolute top-0 end-0 m-2"
@@ -60,16 +66,25 @@ export default function BookCard({ book, onToast }) {
 
       <div className="card-body d-flex flex-column p-3">
         {/* Genre badge */}
-        {book.genre && (
-          <span className="badge mb-2 align-self-start" style={{ background: '#e8f0fe', color: '#0d6efd', fontSize: '0.7rem', borderRadius: 4 }}>
-            {book.genre}
+        {book.genre && book.genre.length > 0 && (
+          <span className="badge mb-2 align-self-start" style={{ background: 'var(--primary-light)', color: 'var(--primary-dark)', fontSize: '0.7rem', borderRadius: 4 }}>
+            {Array.isArray(book.genre) 
+              ? book.genre.map(g => typeof g === 'object' ? g.name : g).join(', ') 
+              : book.genre}
           </span>
         )}
 
-        <h6 className="card-title fw-bold mb-1 text-truncate" title={book.title}>{book.title}</h6>
+        <h6 className="card-title fw-bold mb-0 text-truncate" title={book.title}>{book.title}</h6>
+        {book.author && <div className="text-muted mb-2" style={{ fontSize: '0.8rem', fontWeight: 500 }}>By {book.author}</div>}
+        
         <p className="text-muted mb-2" style={{ fontSize: '0.78rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {book.description || 'No description available.'}
         </p>
+
+        <div className="d-flex flex-wrap gap-1 mb-2">
+          {book.pages > 0 && <span className="badge bg-light text-secondary border" style={{fontSize: '0.65rem'}}>{book.pages} p.</span>}
+          {book.isbn && <span className="badge bg-light text-secondary border" style={{fontSize: '0.65rem'}}>ISBN: {book.isbn}</span>}
+        </div>
 
         {avgRating && (
           <div className="d-flex align-items-center gap-1 mb-2">

@@ -81,12 +81,18 @@ export default function BookDetailPage() {
   const avgRating = book.reviews?.length
     ? (book.reviews.reduce((s, r) => s + r.rating, 0) / book.reviews.length).toFixed(1) : null;
 
+  const renderGenre = (genre) => {
+    if (!genre) return '';
+    if (Array.isArray(genre)) return genre.map(g => typeof g === 'object' ? g.name : g).join(', ');
+    return String(genre);
+  };
+
   return (
     <div style={{ paddingTop: 72, minHeight: '100vh', background: '#f8fafc' }}>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Back button */}
-      <div style={{ background: 'linear-gradient(135deg, #0a1628 0%, #0d3a7a 100%)', padding: '1rem 0' }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', padding: '1rem 1rem', borderRadius: '24px', margin: '0 1rem 1rem 1rem' }}>
         <div className="container">
           <button className="btn btn-link text-white p-0 text-decoration-none" onClick={() => navigate(-1)}>
             <ArrowLeft size={18} className="me-1" /> Back to books
@@ -99,17 +105,39 @@ export default function BookDetailPage() {
           {/* Left: QR + Actions */}
           <div className="col-md-4 col-lg-3">
             <div className="card border-0 shadow-sm" style={{ borderRadius: 16, overflow: 'hidden', position: 'sticky', top: 82 }}>
-              <div className="d-flex align-items-center justify-content-center p-4"
-                style={{ background: 'linear-gradient(135deg, #0a1628, #1a3a6b)', minHeight: 220 }}>
-                {book.qrCode ? (
-                  <img src={`data:image/png;base64,${book.qrCode}`} alt="Book QR Code"
-                    style={{ width: 160, height: 160, objectFit: 'contain', background: '#fff', borderRadius: 10, padding: 6 }} />
+              {/* Cover image / QR – fully fills the panel */}
+              <div style={{ position: 'relative', width: '100%', height: 300, overflow: 'hidden' }}>
+                {book.image ? (
+                  <img
+                    src={book.image.startsWith('http') ? book.image : `http://localhost:8080${book.image}`}
+                    alt={book.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                ) : book.qrCode ? (
+                  <div style={{
+                    width: '100%', height: '100%',
+                    background: 'linear-gradient(135deg, var(--primary-dark), var(--primary))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <img src={`http://localhost:8080${book.qrCode}`} alt="Book QR Code"
+                      style={{ width: 160, height: 160, objectFit: 'contain', background: '#fff', borderRadius: 10, padding: 6 }} />
+                  </div>
                 ) : (
-                  <div className="text-center opacity-50">
+                  <div style={{
+                    width: '100%', height: '100%',
+                    background: 'linear-gradient(135deg, var(--primary-dark), var(--primary))',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5
+                  }}>
                     <QrCode size={64} color="#fff" />
-                    <div className="text-white-50 mt-2" style={{ fontSize: '0.8rem' }}>No QR Code</div>
+                    <div style={{ color: '#fff', marginTop: 8, fontSize: '0.8rem' }}>No Image</div>
                   </div>
                 )}
+                {/* Availability badge overlay */}
+                <span
+                  className={`badge position-absolute top-0 end-0 m-2 ${book.availableCopies > 0 ? 'bg-success' : 'bg-danger'}`}
+                  style={{ borderRadius: 8, fontSize: '0.75rem' }}>
+                  {book.availableCopies > 0 ? `${book.availableCopies} of ${book.totalCopies} available` : 'Unavailable'}
+                </span>
               </div>
               <div className="p-3 d-flex flex-column gap-2">
                 <button className="btn btn-primary w-100" style={{ borderRadius: 10 }} onClick={handleFavourite}>
@@ -131,8 +159,8 @@ export default function BookDetailPage() {
           <div className="col-md-8 col-lg-9">
             <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 16 }}>
               <div className="card-body p-4">
-                {book.genre && (
-                  <span className="badge mb-2" style={{ background: '#e8f0fe', color: '#0d6efd', borderRadius: 6 }}>{book.genre}</span>
+                {book.genre && book.genre.length > 0 && (
+                  <span className="badge mb-2" style={{ background: 'var(--primary-light)', color: 'var(--primary-dark)', borderRadius: 6 }}>{renderGenre(book.genre)}</span>
                 )}
                 <h2 className="fw-bold mb-1">{book.title}</h2>
                 <p className="text-muted mb-3" style={{ fontSize: '0.85rem' }}>ISBN: {book.isbn}</p>
@@ -151,7 +179,7 @@ export default function BookDetailPage() {
                   {[
                     { label: 'Total Copies', value: book.totalCopies },
                     { label: 'Available', value: book.availableCopies },
-                    { label: 'Genre', value: book.genre || '—' },
+                    { label: 'Genre', value: renderGenre(book.genre) || '—' },
                   ].map(i => (
                     <div key={i.label} className="col-auto">
                       <div className="px-3 py-2 rounded-3" style={{ background: '#f0f4ff', border: '1px solid #d0d9f7' }}>

@@ -31,8 +31,8 @@ public class SecurityConfig {
                                 .requestMatchers("/recommend/**").permitAll()
                                 .requestMatchers("/librarian/**").permitAll()
                         .requestMatchers(
-                            "/", "/index.html", "/favicon.svg", "/assets/**",
-                            "/login", "/register", "/dashboard", "/issued", "/favourites", "/waiting-list", "/books/**",
+                            "/", "/index.html", "/favicon.svg", "/assets/**", "/qr/**",
+                            "/login", "/register", "/dashboard", "/issued", "/favourites", "/waiting-list", "/books/**", "/home",
                             "/*.js", "/*.css", "/vite.svg", "/error"
                         ).permitAll()
 //                        .requestMatchers("/admin/**").hasRole("ADMIN")

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -46,7 +47,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<BookDTO> getBooksByGenre(String genre) {
-        return bookRepo.findBookByGenre(genre).stream().map(this::mapBook).toList();
+        return bookRepo.findByGenre(genre).stream().map(this::mapBook).toList();
     }
 
     @Override
@@ -207,6 +208,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDTO> getAllUsers() {
+
         return userRepo.findAll().stream().map(this::mapUser).toList();
     }
 
@@ -243,6 +245,69 @@ public class UserServiceImpl implements UserService {
         return 0;
     }
 
+    // ================ Filters =================
+
+    @Override
+    public List<BookDTO> popularBooks() {
+        return bookRepo.findAll().stream()
+                .sorted((b1, b2) -> Double.compare(b2.getRating(), b1.getRating()))
+                .limit(10)
+                .map(this::mapBook)
+                .toList();
+    }
+
+    @Override
+    public List<BookDTO> latestBooks() {
+        return bookRepo.findAll().stream()
+                .sorted((b1, b2) -> Integer.compare(b2.getBookId(), b1.getBookId()))
+                .limit(10)
+                .map(this::mapBook)
+                .toList();
+    }
+
+    @Override
+    public List<BookDTO> recentBooks() {
+        // Uses a derived query — no findAll(), only fetches top 30 rows from DB
+        return bookRepo.findTop30ByOrderByBookIdDesc()
+                .stream().map(this::mapBook).toList();
+    }
+
+    @Override
+    public List<BookDTO> filterBooks(String title, String author, String genre, Double minRating, Integer minPages, Integer maxPages, Integer availableCopies) {
+        List<Book> books;
+        
+        if (author != null && !author.isEmpty() && minRating != null) {
+            books = bookRepo.findByAuthorContainingIgnoreCaseAndRatingGreaterThanEqual(author, minRating);
+        } else if (genre != null && !genre.isEmpty() && availableCopies != null) {
+            books = bookRepo.findByGenres_NameIgnoreCaseAndAvailableCopiesGreaterThan(genre, availableCopies);
+        } else if (title != null && !title.isEmpty()) {
+            books = bookRepo.findByTitleContainingIgnoreCase(title);
+        } else if (author != null && !author.isEmpty()) {
+            books = bookRepo.findByAuthorContainingIgnoreCase(author);
+        } else if (genre != null && !genre.isEmpty()) {
+            books = bookRepo.findByGenres_NameIgnoreCase(genre);
+        } else if (minRating != null) {
+            books = bookRepo.findByRatingGreaterThanEqual(minRating);
+        } else if (minPages != null && maxPages != null) {
+            books = bookRepo.findByPagesBetween(minPages, maxPages);
+        } else if (availableCopies != null) {
+            books = bookRepo.findByAvailableCopiesGreaterThan(availableCopies);
+        } else {
+            books = bookRepo.findAll();
+        }
+
+        return books.stream()
+                .filter(b -> title == null || title.isEmpty() || (b.getTitle() != null && b.getTitle().toLowerCase().contains(title.toLowerCase())))
+                .filter(b -> author == null || author.isEmpty() || (b.getAuthor() != null && b.getAuthor().toLowerCase().contains(author.toLowerCase())))
+                .filter(b -> genre == null || genre.isEmpty() || (b.getGenre() != null && b.getGenre().stream().anyMatch(g -> g.getName().equalsIgnoreCase(genre))))
+                .filter(b -> minRating == null || b.getRating() >= minRating)
+                .filter(b -> minPages == null || b.getPages() >= minPages)
+                .filter(b -> maxPages == null || b.getPages() <= maxPages)
+                .filter(b -> availableCopies == null || b.getAvailableCopies() > availableCopies)
+                .map(this::mapBook)
+                .toList();
+    }
+
     // ================= MAPPERS =================
 
     private BookDTO mapBook(Book b) {
@@ -255,6 +320,9 @@ public class UserServiceImpl implements UserService {
         dto.setTotalCopies(b.getTotalCopies());
         dto.setIsbn(b.getIsbn());
         dto.setQrCode(b.getQrCode());
+        dto.setAuthor(b.getAuthor());
+        dto.setPages(b.getPages());
+        dto.setImage(b.getImage());
 
         dto.setFavourites(b.getFavourites() == null ? List.of() :
                 b.getFavourites().stream().map(this::mapFavourite).toList());

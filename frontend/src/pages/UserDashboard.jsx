@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllBooks, searchBooks, getBooksByGenre } from '../services/api';
+import { getAllBooks, filterBooks } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import BookCard from '../components/BookCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
-import { Search, BookOpen, BookMarked, Heart, Clock, Star, ChevronRight } from 'lucide-react';
+import { Search, BookOpen, BookMarked, Heart, Clock, Star, ChevronRight, Filter, X } from 'lucide-react';
 
 const GENRES = ['Fiction', 'Non-Fiction', 'Science', 'Technology', 'History', 'Biography', 'Fantasy', 'Mystery', 'Romance', 'Self-Help'];
 
@@ -17,6 +17,14 @@ export default function UserDashboard() {
   const [search, setSearch] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
   const [toast, setToast] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    author: '',
+    minRating: '',
+    minPages: '',
+    maxPages: '',
+    availableOnly: false
+  });
 
   useEffect(() => { fetchBooks(); }, []);
 
@@ -29,42 +37,62 @@ export default function UserDashboard() {
     finally { setLoading(false); }
   };
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!search.trim()) { fetchBooks(); return; }
+  const applyFilters = async (overrideParams = {}) => {
     setLoading(true);
     try {
-      const res = await searchBooks(search.trim());
-      setBooks(res.data);
-      setSelectedGenre('');
-    } catch { setToast({ message: 'Search failed.', type: 'error' }); }
+      const params = {};
+      const currentTitle = overrideParams.title !== undefined ? overrideParams.title : search;
+      const currentGenre = overrideParams.genre !== undefined ? overrideParams.genre : selectedGenre;
+
+      if (currentTitle) params.title = currentTitle;
+      if (currentGenre) params.genre = currentGenre;
+      if (filters.author) params.author = filters.author;
+      if (filters.minRating) params.minRating = filters.minRating;
+      if (filters.minPages) params.minPages = filters.minPages;
+      if (filters.maxPages) params.maxPages = filters.maxPages;
+      if (filters.availableOnly) params.availableCopies = 0;
+
+      if (Object.keys(params).length === 0) {
+        const res = await getAllBooks();
+        setBooks(res.data);
+      } else {
+        const res = await filterBooks(params);
+        setBooks(res.data);
+      }
+    } catch { setToast({ message: 'Filter failed.', type: 'error' }); }
     finally { setLoading(false); }
   };
 
-  const handleGenre = async (genre) => {
-    if (selectedGenre === genre) { setSelectedGenre(''); fetchBooks(); return; }
-    setSelectedGenre(genre);
-    setLoading(true);
-    try {
-      const res = await getBooksByGenre(genre);
-      setBooks(res.data);
-      setSearch('');
-    } catch { setToast({ message: 'Could not filter by genre.', type: 'error' }); }
-    finally { setLoading(false); }
+  const handleSearch = (e) => {
+    e.preventDefault();
+    applyFilters({ title: search });
+  };
+
+  const handleGenre = (genre) => {
+    const newGenre = selectedGenre === genre ? '' : genre;
+    setSelectedGenre(newGenre);
+    applyFilters({ genre: newGenre });
+  };
+  
+  const clearFilters = () => {
+    setSearch('');
+    setSelectedGenre('');
+    setFilters({ author: '', minRating: '', minPages: '', maxPages: '', availableOnly: false });
+    applyFilters({ title: '', genre: '', author: '', minRating: '', minPages: '', maxPages: '', availableOnly: false });
   };
 
   const quickLinks = [
-    { icon: <BookMarked size={22} />, label: 'Issued Books', path: '/issued', color: '#0d6efd', bg: '#e8f0fe' },
+    { icon: <BookMarked size={22} />, label: 'Issued Books', path: '/issued', color: 'var(--primary-dark)', bg: 'var(--primary-light)' },
     { icon: <Heart size={22} />, label: 'My Favourites', path: '/favourites', color: '#dc3545', bg: '#fce8ea' },
     { icon: <Clock size={22} />, label: 'Waiting List', path: '/waiting-list', color: '#fd7e14', bg: '#fff3e0' },
   ];
 
   return (
-    <div style={{ paddingTop: 72, minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: 10, minHeight: '100vh', background: 'transparent' }}>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Hero Welcome Banner */}
-      <div style={{ background: 'linear-gradient(135deg, #0a1628 0%, #0d6efd 100%)', color: '#fff', padding: '2.5rem 0 2rem' }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', borderRadius: '24px', margin: '0 1rem', color: '#fff', padding: '3rem 2rem 2.5rem' }}>
         <div className="container">
           <div className="row align-items-center">
             <div className="col-md-7">
@@ -81,10 +109,13 @@ export default function UserDashboard() {
                     placeholder="Search books by title…" value={search}
                     onChange={e => setSearch(e.target.value)}
                     style={{ borderRadius: 0, boxShadow: 'none' }} />
-                  <button id="book-search-btn" type="submit" className="btn btn-warning fw-semibold text-dark px-4">Search</button>
+                  <button id="book-search-btn" type="submit" className="btn fw-bold text-dark px-5" style={{ background: 'var(--primary-light)', borderRadius: '0 12px 12px 0' }}>Search</button>
                 </div>
-                {(search || selectedGenre) && (
-                  <button type="button" className="btn btn-outline-light btn-sm" onClick={() => { setSearch(''); setSelectedGenre(''); fetchBooks(); }}>
+                <button type="button" className="btn btn-outline-light d-flex align-items-center gap-2" onClick={() => setShowFilters(!showFilters)}>
+                  <Filter size={18} /> Filters
+                </button>
+                {(search || selectedGenre || filters.author || filters.minRating || filters.minPages || filters.maxPages || filters.availableOnly) && (
+                  <button type="button" className="btn btn-outline-light btn-sm" onClick={clearFilters}>
                     Clear
                   </button>
                 )}
@@ -92,7 +123,7 @@ export default function UserDashboard() {
             </div>
             <div className="col-md-5 d-none d-md-flex justify-content-end">
               <div className="d-flex gap-3">
-                {[{ val: books.length, label: 'Books' }, { val: books.filter(b => b.availableCopies > 0).length, label: 'Available' }].map(s => (
+                {[{ val: (Array.isArray(books) ? books : []).length, label: 'Books' }, { val: (Array.isArray(books) ? books : []).filter(b => b.availableCopies > 0).length, label: 'Available' }].map(s => (
                   <div key={s.label} className="text-center px-4 py-3 rounded-3" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
                     <div className="fw-bold" style={{ fontSize: '1.8rem' }}>{s.val}</div>
                     <div style={{ opacity: 0.7, fontSize: '0.8rem' }}>{s.label}</div>
@@ -125,6 +156,43 @@ export default function UserDashboard() {
             </div>
           ))}
         </div>
+
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+          <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 14, background: '#f8f9fa' }}>
+            <div className="card-body p-4">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="fw-bold mb-0">Advanced Filters</h6>
+                <button className="btn btn-sm btn-light" onClick={() => setShowFilters(false)}><X size={18} /></button>
+              </div>
+              <div className="row g-3">
+                <div className="col-md-3">
+                  <label className="form-label small fw-bold text-muted">Author</label>
+                  <input type="text" className="form-control form-control-sm" placeholder="Author name" value={filters.author} onChange={e => setFilters({...filters, author: e.target.value})} />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label small fw-bold text-muted">Min Rating</label>
+                  <input type="number" step="0.5" min="0" max="5" className="form-control form-control-sm" placeholder="e.g. 4.0" value={filters.minRating} onChange={e => setFilters({...filters, minRating: e.target.value})} />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label small fw-bold text-muted">Min Pages</label>
+                  <input type="number" min="0" className="form-control form-control-sm" placeholder="Min" value={filters.minPages} onChange={e => setFilters({...filters, minPages: e.target.value})} />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label small fw-bold text-muted">Max Pages</label>
+                  <input type="number" min="0" className="form-control form-control-sm" placeholder="Max" value={filters.maxPages} onChange={e => setFilters({...filters, maxPages: e.target.value})} />
+                </div>
+                <div className="col-md-3 d-flex align-items-end gap-2">
+                  <div className="form-check mb-1">
+                    <input className="form-check-input" type="checkbox" id="availCheck" checked={filters.availableOnly} onChange={e => setFilters({...filters, availableOnly: e.target.checked})} />
+                    <label className="form-check-label small fw-bold text-muted" htmlFor="availCheck">Available Only</label>
+                  </div>
+                  <button className="btn btn-sm btn-primary ms-auto px-4" onClick={() => applyFilters()}>Apply</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Genre Filter */}
         <div className="mb-4">

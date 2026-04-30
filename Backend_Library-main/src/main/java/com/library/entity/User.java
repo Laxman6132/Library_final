@@ -192,7 +192,10 @@ public class User {
                 '}';
     }
 
-    public User(int userId, String userName, String emailId, String role, String password, String gender, String address, long phNo, float fine, String qrCode, String qrToken, List<Review> reviews, List<IssuedBook> issuedBooks, List<WaitingList> waitingList, List<Favourite> favourites, List<Interaction> interactions) {
+    public User(int userId, String userName, String emailId, String role, String password, String gender,
+            String address, long phNo, float fine, String qrCode, String qrToken, List<Review> reviews,
+            List<IssuedBook> issuedBooks, List<WaitingList> waitingList, List<Favourite> favourites,
+            List<Interaction> interactions) {
         this.userId = userId;
         this.userName = userName;
         this.emailId = emailId;

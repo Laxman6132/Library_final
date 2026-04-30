@@ -1,6 +1,7 @@
 package com.library.service;
 
 import com.library.dto.*;
+import com.library.entity.Book;
 
 import java.util.List;
 
@@ -56,5 +57,11 @@ public interface UserService {
     float calculateFine(int userId);
 
     float calculateFinePerBook(int issueBookId);
+
+    // ================ Filters ================
+    List<BookDTO> popularBooks();
+    List<BookDTO> latestBooks();
+    List<BookDTO> recentBooks();   // fast — top 30 by ID desc, used by dashboards
+    List<BookDTO> filterBooks(String title, String author, String genre, Double minRating, Integer minPages, Integer maxPages, Integer availableCopies);
     void bcrpt();
 }

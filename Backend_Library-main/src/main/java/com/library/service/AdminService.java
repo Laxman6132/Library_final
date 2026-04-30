@@ -19,4 +19,5 @@ public interface AdminService {
     void changeFineRule(int ruleId, FineRule rule);
     void qrRegeneration(int userId);
     void generateQrForAllBook();
+    void generateQRForAllUser();
 }

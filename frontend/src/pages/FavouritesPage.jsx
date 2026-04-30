@@ -19,9 +19,9 @@ function FavouriteCard({ fav, onDelete }) {
       onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
       onMouseLeave={e => e.currentTarget.style.transform = ''}>
       <div className="d-flex align-items-center justify-content-center"
-        style={{ background: 'linear-gradient(135deg, #1a1035, #2d1b69)', height: 120 }}>
+        style={{ background: 'linear-gradient(135deg, var(--primary-dark), var(--primary))', height: 120 }}>
         {book?.qrCode ? (
-          <img src={`data:image/png;base64,${book.qrCode}`} alt="QR"
+          <img src={`http://localhost:8080${book.qrCode}`} alt="QR"
             style={{ height: 90, width: 90, objectFit: 'contain', background: '#fff', borderRadius: 8, padding: 4 }} />
         ) : <BookOpen size={40} color="rgba(255,255,255,0.3)" />}
       </div>
@@ -70,10 +70,10 @@ export default function FavouritesPage() {
   };
 
   return (
-    <div style={{ paddingTop: 72, minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: 10, minHeight: '100vh', background: 'transparent' }}>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div style={{ background: 'linear-gradient(135deg, #1a1035 0%, #6f42c1 100%)', padding: '2rem 0 1.5rem' }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', padding: '2rem 1rem 1.5rem', borderRadius: '24px', margin: '0 1rem' }}>
         <div className="container">
           <h2 className="text-white fw-bold mb-0 d-flex align-items-center gap-2">
             <Heart size={28} fill="white" /> My Favourites

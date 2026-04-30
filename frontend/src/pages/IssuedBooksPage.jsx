@@ -83,15 +83,15 @@ export default function IssuedBooksPage() {
     finally { setPayingFine(false); }
   };
 
-  const active = issues.filter(i => !i.returned);
-  const returned = issues.filter(i => i.returned);
+  const active = (Array.isArray(issues) ? issues : []).filter(i => !i.returned);
+  const returned = (Array.isArray(issues) ? issues : []).filter(i => i.returned);
 
   return (
-    <div style={{ paddingTop: 72, minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: 10, minHeight: '100vh', background: 'transparent' }}>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0a1628 0%, #0d6efd 100%)', padding: '2rem 0 1.5rem' }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', padding: '2rem 1rem 1.5rem', borderRadius: '24px', margin: '0 1rem' }}>
         <div className="container">
           <h2 className="text-white fw-bold mb-0 d-flex align-items-center gap-2">
             <BookMarked size={28} /> My Issued Books

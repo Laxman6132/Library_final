@@ -4,6 +4,7 @@ import com.library.entity.FineRule;
 import com.library.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "http://localhost:5173")
 
@@ -61,6 +62,11 @@ public class AdminController {
     @PostMapping("/GenerateForAllBooks")
     public String qrForAllBook(){
         adminService.generateQrForAllBook();
+        return "success";
+    }
+    @PostMapping("/GenerateForAllUsers")
+    public String qrForAllUser(){
+        adminService.generateQRForAllUser();
         return "success";
     }
 }

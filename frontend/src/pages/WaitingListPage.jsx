@@ -18,9 +18,9 @@ function WaitingCard({ item, onRemove }) {
     <div className="card border-0 shadow-sm" style={{ borderRadius: 14, overflow: 'hidden' }}>
       <div className="card-body d-flex align-items-center gap-3 p-3">
         <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-          style={{ width: 56, height: 56, background: 'linear-gradient(135deg, #0a1628, #0d3a7a)' }}>
+          style={{ width: 56, height: 56, background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))' }}>
           {book?.qrCode ? (
-            <img src={`data:image/png;base64,${book.qrCode}`} alt="QR"
+            <img src={`http://localhost:8080${book.qrCode}`} alt="QR"
               style={{ width: 44, height: 44, objectFit: 'contain', background: '#fff', borderRadius: 6, padding: 2 }} />
           ) : <BookOpen size={24} color="rgba(255,255,255,0.4)" />}
         </div>
@@ -67,10 +67,10 @@ export default function WaitingListPage() {
   };
 
   return (
-    <div style={{ paddingTop: 72, minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ paddingTop: 10, minHeight: '100vh', background: 'transparent' }}>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div style={{ background: 'linear-gradient(135deg, #0a1628 0%, #fd7e14 100%)', padding: '2rem 0 1.5rem' }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', padding: '2rem 1rem 1.5rem', borderRadius: '24px', margin: '0 1rem' }}>
         <div className="container">
           <h2 className="text-white fw-bold mb-0 d-flex align-items-center gap-2">
             <Clock size={28} /> My Waiting List

@@ -13,14 +13,17 @@ public class Book {
     private String author;
     private String title;
     private String description;
-
+    private String genre;
+    private int pages;
     @Column(unique = true)
     private String isbn;
-
+    private String isbn_10;
+    private String image;
     private int totalCopies;
     private int availableCopies;
-
-    private String genre;
+    private double rating;
+    @ManyToMany
+    private List<Genre> genres;
 
     private String qrCode;
 
@@ -37,6 +40,46 @@ public class Book {
     private List<Interaction> interactions;
     @OneToMany(mappedBy = "book")
     private List<Favourite> favourites;
+
+    public String getIsbn_10() {
+        return isbn_10;
+    }
+
+    public void setIsbn_10(String isbn_10) {
+        this.isbn_10 = isbn_10;
+    }
+
+    public List<Genre> getGenre() {
+        return genres;
+    }
+
+    public void setGenre(List<Genre> genres) {
+        this.genres = genres;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
+
+    public double getRating() {
+        return rating;
+    }
+
+    public void setRating(double rating) {
+        this.rating = rating;
+    }
+
+    public int getPages() {
+        return pages;
+    }
+
+    public void setPages(int pages) {
+        this.pages = pages;
+    }
 
     public String getAuthor() {
         return author;
@@ -94,12 +137,12 @@ public class Book {
         this.availableCopies = availableCopies;
     }
 
-    public String getGenre() {
-        return genre;
+    public List<Interaction> getInteractions() {
+        return interactions;
     }
 
-    public void setGenre(String genre) {
-        this.genre = genre;
+    public void setInteractions(List<Interaction> interactions) {
+        this.interactions = interactions;
     }
 
     public String getQrCode() {
@@ -149,31 +192,43 @@ public class Book {
                 ", author='" + author + '\'' +
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
+                ", genre='" + genre + '\'' +
+                ", pages=" + pages +
                 ", isbn='" + isbn + '\'' +
+                ", isbn_10='" + isbn_10 + '\'' +
+                ", image='" + image + '\'' +
                 ", totalCopies=" + totalCopies +
                 ", availableCopies=" + availableCopies +
-                ", genre='" + genre + '\'' +
+                ", rating=" + rating +
+                ", genres=" + genres +
                 ", qrCode='" + qrCode + '\'' +
                 ", reviews=" + reviews +
                 ", issuedBooks=" + issuedBooks +
                 ", waitingList=" + waitingList +
+                ", interactions=" + interactions +
                 ", favourites=" + favourites +
                 '}';
     }
 
-    public Book(int bookId, String author, String title, String description, String isbn, int totalCopies, int availableCopies, String genre, String qrCode, List<Review> reviews, List<IssuedBook> issuedBooks, List<WaitingList> waitingList, List<Favourite> favourites) {
+    public Book(int bookId, String author, String title, String description, String genre, int pages, String isbn, String isbn_10, String image, int totalCopies, int availableCopies, double rating, List<Genre> genres, String qrCode, List<Review> reviews, List<IssuedBook> issuedBooks, List<WaitingList> waitingList, List<Interaction> interactions, List<Favourite> favourites) {
         this.bookId = bookId;
         this.author = author;
         this.title = title;
         this.description = description;
+        this.genre = genre;
+        this.pages = pages;
         this.isbn = isbn;
+        this.isbn_10 = isbn_10;
+        this.image = image;
         this.totalCopies = totalCopies;
         this.availableCopies = availableCopies;
-        this.genre = genre;
+        this.rating = rating;
+        this.genres = genres;
         this.qrCode = qrCode;
         this.reviews = reviews;
         this.issuedBooks = issuedBooks;
         this.waitingList = waitingList;
+        this.interactions = interactions;
         this.favourites = favourites;
     }
 

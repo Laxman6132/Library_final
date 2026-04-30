@@ -18,7 +18,8 @@ public class SpaRedirectController {
         "/waiting-list",
         "/librarian/**",
         "/admin/**",
-        "/books/**"
+        "/books/**",
+        "/home"
     })
     public String redirect() {
         // Forward to the static index.html

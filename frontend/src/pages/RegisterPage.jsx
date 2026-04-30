@@ -43,7 +43,7 @@ export default function RegisterPage() {
       className="min-vh-100 d-flex align-items-center justify-content-center py-5"
       style={{
         background:
-          "linear-gradient(135deg, #0a1628 0%, #0d3a7a 50%, #0a1628 100%)",
+          "linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)",
       }}
     >
       <div
@@ -54,7 +54,7 @@ export default function RegisterPage() {
           width: 350,
           height: 350,
           borderRadius: "50%",
-          background: "rgba(13,110,253,0.1)",
+          background: "rgba(249,115,22,0.1)",
           pointerEvents: "none",
         }}
       />
@@ -67,18 +67,18 @@ export default function RegisterPage() {
           <div
             className="text-center py-4 px-4"
             style={{
-              background: "linear-gradient(135deg, #0a1628 0%, #0d6efd 100%)",
+              background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)",
             }}
           >
             <div
-              className="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning mb-3"
-              style={{ width: 56, height: 56 }}
+              className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+              style={{ width: 56, height: 56, background: 'rgba(255,255,255,0.2)' }}
             >
-              <BookOpen size={26} className="text-dark" />
+              <BookOpen size={26} className="text-white" />
             </div>
             <h3 className="text-white fw-bold mb-1">Create Account</h3>
             <p className="text-white-50 mb-0" style={{ fontSize: "0.875rem" }}>
-              Join LibraryMS today
+              Join Scanexus today
             </p>
           </div>
 
@@ -221,11 +221,11 @@ export default function RegisterPage() {
               <button
                 id="reg-submit"
                 type="submit"
-                className="btn btn-primary btn-lg w-100 fw-semibold mt-4"
+                className="btn btn-lg w-100 fw-semibold mt-4 text-white"
                 disabled={loading}
                 style={{
                   borderRadius: 12,
-                  background: "linear-gradient(135deg, #0d6efd, #0a58ca)",
+                  background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
                   border: "none",
                 }}
               >
