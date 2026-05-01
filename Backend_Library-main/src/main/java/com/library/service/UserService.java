@@ -5,10 +5,15 @@ import com.library.entity.Book;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 public interface UserService {
 
     // ================= BOOK =================
     List<BookDTO> getAllBook();
+
+    Page<BookDTO> getBooksPaginated(Pageable pageable);
 
     BookDTO getBookById(int bookId);
 

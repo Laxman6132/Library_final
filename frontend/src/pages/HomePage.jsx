@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  getPopularBooks, getLatestBooks, getRecommendations, filterBooks as apiFilterBooks,
+  getPopularBooks, getLatestBooks, filterBooks as apiFilterBooks,
+  getBooksPaginated,
 } from '../services/api';
 import BookCard from '../components/BookCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
 import {
-  Sparkles, TrendingUp, Clock, BookOpen,
+  TrendingUp, Clock, BookOpen,
   LayoutDashboard, Shield, Search, SlidersHorizontal, X, Star,
+  ChevronLeft, ChevronRight, Library,
 } from 'lucide-react';
 
 /* ─── Genre helper ─── */
@@ -49,7 +51,6 @@ export default function HomePage() {
 
   const [popularBooks, setPopularBooks] = useState([]);
   const [latestBooks, setLatestBooks] = useState([]);
-  const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
@@ -66,6 +67,13 @@ export default function HomePage() {
   const [quickSearch, setQuickSearch] = useState('');
   const debounceRef = useRef(null);
 
+  /* ── Book Catalog (paginated) ── */
+  const [catalogBooks, setCatalogBooks] = useState([]);
+  const [catalogPage, setCatalogPage] = useState(0);
+  const [catalogTotalPages, setCatalogTotalPages] = useState(0);
+  const [catalogTotalElements, setCatalogTotalElements] = useState(0);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+
   useEffect(() => { fetchHomeData(); }, [auth, userProfile?.userId]);
 
   const fetchHomeData = async () => {
@@ -74,16 +82,28 @@ export default function HomePage() {
       const [popRes, latestRes] = await Promise.all([getPopularBooks(), getLatestBooks()]);
       setPopularBooks(popRes.data);
       setLatestBooks(latestRes.data);
-      if (auth && userProfile?.userId) {
-        try {
-          const recRes = await getRecommendations(userProfile.userId);
-          setRecommendations(recRes.data);
-        } catch { /* optional */ }
-      }
     } catch {
       setToast({ message: 'Could not load home page data.', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  /* ── Fetch paginated catalog ── */
+  useEffect(() => { fetchCatalog(); }, [catalogPage]);
+
+  const fetchCatalog = async () => {
+    setCatalogLoading(true);
+    try {
+      const res = await getBooksPaginated(catalogPage, 20);
+      const data = res.data;
+      setCatalogBooks(Array.isArray(data.content) ? data.content : []);
+      setCatalogTotalPages(data.totalPages || 0);
+      setCatalogTotalElements(data.totalElements || 0);
+    } catch {
+      setToast({ message: 'Could not load book catalog.', type: 'error' });
+    } finally {
+      setCatalogLoading(false);
     }
   };
 
@@ -464,11 +484,6 @@ export default function HomePage() {
         ) : (
           /* ── Default home sections ── */
           <>
-            {/* Recommendations */}
-            {Array.isArray(recommendations) && recommendations.length > 0 && 
-              renderSection(recommendations, 'Recommended for You', <Sparkles size={24} className="text-warning" />)
-            }
-
             {popularBooks.length > 0 && renderSection(popularBooks, 'Popular Books', <TrendingUp size={24} className="text-primary" />)}
             {latestBooks.length > 0 && renderSection(latestBooks, 'Latest Arrivals', <Clock size={24} className="text-success" />)}
 
@@ -478,6 +493,85 @@ export default function HomePage() {
                 <h5 className="text-muted">No books available</h5>
               </div>
             )}
+
+            {/* ══ Paginated Book Catalog ══ */}
+            <div style={{ marginTop: '1.5rem' }}>
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <Library size={24} style={{ color: 'var(--primary)' }} />
+                <h4 className="fw-bold mb-0 text-dark">All Books</h4>
+                <span style={{
+                  background: 'var(--primary-light)', color: 'var(--primary-dark)',
+                  borderRadius: 8, padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700,
+                }}>{catalogTotalElements} total</span>
+              </div>
+
+              {catalogLoading ? (
+                <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                  <div className="spinner-border" style={{ color: 'var(--primary)', width: 32, height: 32 }} role="status" />
+                  <p style={{ marginTop: 12, color: '#6b7280', fontSize: '0.88rem' }}>Loading books…</p>
+                </div>
+              ) : catalogBooks.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem 0', color: '#9ca3af' }}>
+                  <BookOpen size={48} style={{ opacity: 0.25 }} />
+                  <p style={{ marginTop: 8 }}>No books found.</p>
+                </div>
+              ) : (
+                <>
+                  {/* 2-column grid */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '1.25rem',
+                  }}>
+                    {catalogBooks.map(book => (
+                      <BookCard key={book.bookId} book={book} onToast={setToast} />
+                    ))}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    gap: 16, padding: '1.5rem 0 0.5rem',
+                  }}>
+                    <button
+                      disabled={catalogPage === 0}
+                      onClick={() => { setCatalogPage(p => p - 1); window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' }); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '9px 20px', borderRadius: 10, fontWeight: 600, fontSize: '0.88rem',
+                        border: '1.5px solid #e2e8f0', cursor: catalogPage === 0 ? 'not-allowed' : 'pointer',
+                        background: catalogPage === 0 ? '#f8fafc' : '#fff',
+                        color: catalogPage === 0 ? '#cbd5e1' : '#374151',
+                        opacity: catalogPage === 0 ? 0.6 : 1,
+                        transition: 'all .15s',
+                      }}
+                    >
+                      <ChevronLeft size={16} /> Previous
+                    </button>
+
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#374151' }}>
+                      Page {catalogPage + 1} of {catalogTotalPages}
+                    </span>
+
+                    <button
+                      disabled={catalogPage >= catalogTotalPages - 1}
+                      onClick={() => { setCatalogPage(p => p + 1); window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' }); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '9px 20px', borderRadius: 10, fontWeight: 600, fontSize: '0.88rem',
+                        border: 'none', cursor: catalogPage >= catalogTotalPages - 1 ? 'not-allowed' : 'pointer',
+                        background: catalogPage >= catalogTotalPages - 1 ? '#f1f5f9' : 'var(--primary)',
+                        color: catalogPage >= catalogTotalPages - 1 ? '#cbd5e1' : '#fff',
+                        opacity: catalogPage >= catalogTotalPages - 1 ? 0.6 : 1,
+                        transition: 'all .15s',
+                      }}
+                    >
+                      Next <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </>
         )}
       </div>

@@ -6,6 +6,8 @@ import com.library.repository.*;
 import com.library.service.UserService;
 import com.library.util.QRGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +40,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<BookDTO> getAllBook() {
         return bookRepo.findAll().stream().map(this::mapBook).toList();
+    }
+
+    @Override
+    public Page<BookDTO> getBooksPaginated(Pageable pageable) {
+        return bookRepo.findAll(pageable).map(this::mapBook);
     }
 
     @Override

@@ -26,7 +26,7 @@ function FavouriteCard({ fav, onDelete }) {
         ) : <BookOpen size={40} color="rgba(255,255,255,0.3)" />}
       </div>
       <div className="card-body p-3">
-        {book?.genre && <span className="badge mb-1" style={{ background: '#fce8ea', color: '#dc3545', fontSize: '0.68rem' }}>{book.genre}</span>}
+        {book?.genre && <span className="badge mb-1" style={{ background: '#fce8ea', color: '#dc3545', fontSize: '0.68rem' }}>{typeof book.genre === 'object' ? book.genre.name : book.genre}</span>}
         <h6 className="fw-bold text-truncate mb-1">{book?.title || `Book #${fav.bookId}`}</h6>
         <p className="text-muted mb-3" style={{ fontSize: '0.78rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {book?.description || ''}

@@ -30,9 +30,10 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").permitAll()
                                 .requestMatchers("/recommend/**").permitAll()
                                 .requestMatchers("/librarian/**").permitAll()
+                                .requestMatchers("/analytics/**").permitAll()
                         .requestMatchers(
                             "/", "/index.html", "/favicon.svg", "/assets/**", "/qr/**",
-                            "/login", "/register", "/dashboard", "/issued", "/favourites", "/waiting-list", "/books/**", "/home",
+                            "/login", "/register", "/dashboard", "/issued", "/favourites", "/waiting-list", "/books/**", "/home", "/analytics",
                             "/*.js", "/*.css", "/vite.svg", "/error"
                         ).permitAll()
 //                        .requestMatchers("/admin/**").hasRole("ADMIN")
