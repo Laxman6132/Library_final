@@ -67,7 +67,7 @@ def compute_matrices(books_df, interactions_df):
         'trending_books': trending_books
     }
 
-def get_user_recommendations(user_id, matrices, top_n=8, content_weight=0.5, collab_weight=0.5):
+def get_user_recommendations(user_id, matrices, top_n=10, content_weight=0.5, collab_weight=0.5):
     """
     Executes the recommendation logic using the pre-computed matrices passed from main.py.
     """

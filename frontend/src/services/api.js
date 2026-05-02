@@ -27,6 +27,7 @@ export const deleteUser = (id) => api.delete(`/user/delete/${id}`);
 
 // ─── BOOKS ───────────────────────────────────────────────────────────────────
 export const getAllBooks = () => api.get('/user/books');
+export const getBooksPaginated = (page = 0, size = 20) => api.get('/user/books/paginated', { params: { page, size } });
 export const searchBooks = (prefix) => api.get('/user/books/search', { params: { prefix } });
 export const getBooksByGenre = (genre) => api.get(`/user/books/genre/${genre}`);
 export const getBookById = (id) => api.get(`/user/books/${id}`);
@@ -79,5 +80,11 @@ export const makeAdmin = (userId) => api.put(`/admin/role/admin/${userId}`);
 export const updateFineRule = (ruleId, rule) => api.put(`/admin/fine-rule/${ruleId}`, rule);
 export const regenerateUserQR = (userId) => api.post(`/admin/RegenerateQR/${userId}`);
 export const generateQRForAllBooks = () => api.post('/admin/GenerateForAllBooks');
+
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+export const getAnalyticsMostBorrowed = () => api.get('/analytics/most-borrowed');
+export const getAnalyticsIssueTrends = () => api.get('/analytics/issue-trends');
+export const getAnalyticsFineDefaulters = () => api.get('/analytics/fine-defaulters');
+export const getAnalyticsInactiveUsers = () => api.get('/analytics/inactive-users');
 
 export default api;

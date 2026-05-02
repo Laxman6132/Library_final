@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/user")
@@ -25,6 +28,14 @@ public class UserController {
     @GetMapping("/books")
     public ResponseEntity<List<BookDTO>> getAllBooks() {
         return ResponseEntity.ok(userService.getAllBook());
+    }
+
+    @GetMapping("/books/paginated")
+    public ResponseEntity<Page<BookDTO>> getBooksPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(userService.getBooksPaginated(PageRequest.of(page, size)));
     }
 
     @GetMapping("/books/genre/{genre}")

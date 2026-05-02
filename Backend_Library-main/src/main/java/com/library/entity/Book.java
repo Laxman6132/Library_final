@@ -12,6 +12,7 @@ public class Book {
     private int bookId;
     private String author;
     private String title;
+    @Column(name = "description", columnDefinition = "TEXT NOT NULL")
     private String description;
     private String genre;
     private int pages;

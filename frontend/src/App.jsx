@@ -16,6 +16,7 @@ import ProfilePage from './pages/ProfilePage';
 import LibrarianDashboard from './pages/LibrarianDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import HomePage from './pages/HomePage';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 
 /** Redirects to home page for all authenticated users */
 function DefaultRedirect() {
@@ -67,6 +68,11 @@ function AppLayout() {
         {/* Admin */}
         <Route path="/admin" element={
           <ProtectedRoute requiredRole="ADMIN"><AdminDashboard /></ProtectedRoute>
+        } />
+
+        {/* Analytics — accessible to both LIBRARIAN and ADMIN */}
+        <Route path="/analytics" element={
+          <ProtectedRoute requiredRole="LIBRARIAN"><AnalyticsDashboard /></ProtectedRoute>
         } />
 
         {/* Default redirect based on role */}

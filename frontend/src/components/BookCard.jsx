@@ -66,13 +66,16 @@ export default function BookCard({ book, onToast }) {
 
       <div className="card-body d-flex flex-column p-3">
         {/* Genre badge */}
-        {book.genre && book.genre.length > 0 && (
-          <span className="badge mb-2 align-self-start" style={{ background: 'var(--primary-light)', color: 'var(--primary-dark)', fontSize: '0.7rem', borderRadius: 4 }}>
-            {Array.isArray(book.genre) 
-              ? book.genre.map(g => typeof g === 'object' ? g.name : g).join(', ') 
-              : book.genre}
-          </span>
-        )}
+        {(() => {
+          const genreDisplay = Array.isArray(book.genre)
+            ? book.genre.map(g => (typeof g === 'object' && g !== null ? g.name : g)).join(', ')
+            : (typeof book.genre === 'object' && book.genre !== null ? book.genre.name : book.genre);
+          return genreDisplay ? (
+            <span className="badge mb-2 align-self-start" style={{ background: 'var(--primary-light)', color: 'var(--primary-dark)', fontSize: '0.7rem', borderRadius: 4 }}>
+              {genreDisplay}
+            </span>
+          ) : null;
+        })()}
 
         <h6 className="card-title fw-bold mb-0 text-truncate" title={book.title}>{book.title}</h6>
         {book.author && <div className="text-muted mb-2" style={{ fontSize: '0.8rem', fontWeight: 500 }}>By {book.author}</div>}

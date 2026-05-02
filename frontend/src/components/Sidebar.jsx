@@ -2,7 +2,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Heart, Clock, Star,
-  Users, PlusCircle, ArrowLeftRight, Shield, BookMarked, Settings
+  Users, PlusCircle, ArrowLeftRight, Shield, BookMarked, Settings, BarChart3
 } from 'lucide-react';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -25,6 +25,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { icon: <ArrowLeftRight size={18} />, label: 'Issue / Return', path: '/librarian' },
     { icon: <Users size={18} />, label: 'Users', path: '/librarian' },
     { icon: <BookOpen size={18} />, label: 'Books List', path: '/librarian' },
+    { icon: <BarChart3 size={18} />, label: 'Analytics', path: '/analytics' },
   ];
 
   const adminLinks = [
@@ -33,6 +34,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { icon: <BookOpen size={18} />, label: 'Manage Books', path: '/admin' },
     { icon: <Settings size={18} />, label: 'Fine Rules', path: '/admin' },
     { icon: <Star size={18} />, label: 'QR Management', path: '/admin' },
+    { icon: <BarChart3 size={18} />, label: 'Analytics', path: '/analytics' },
   ];
 
   const links = isAdmin() ? adminLinks : isLibrarian() ? librarianLinks : userLinks;

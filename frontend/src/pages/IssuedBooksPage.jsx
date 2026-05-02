@@ -24,7 +24,7 @@ function IssuedBookRow({ issue, onPayFine, onToast }) {
     <tr>
       <td>
         <div className="fw-semibold">{book?.title || `Book #${issue.bookId}`}</div>
-        <small className="text-muted">{book?.genre}</small>
+        <small className="text-muted">{book?.genre ? (typeof book.genre === 'object' ? book.genre.name : book.genre) : ''}</small>
       </td>
       <td><small>{new Date(issue.issueDate).toLocaleDateString()}</small></td>
       <td>

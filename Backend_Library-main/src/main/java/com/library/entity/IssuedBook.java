@@ -24,7 +24,8 @@ public class IssuedBook {
     private LocalDateTime dueDate;
     private int finePaid;
     private LocalDateTime returnDate;
-
+    
+    @Column(name = "returned", columnDefinition = "TINYINT(1) NOT NULL DEFAULT 0")
     private boolean returned;
 
     @Override
