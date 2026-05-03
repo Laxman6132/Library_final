@@ -4,12 +4,13 @@ import {
   getAnalyticsIssueTrends,
   getAnalyticsFineDefaulters,
   getAnalyticsInactiveUsers,
+  sendRetentionEmails,
 } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
 import {
   BarChart3, TrendingUp, AlertTriangle, UserX,
-  ArrowUpDown, ChevronUp, ChevronDown, Users, BookOpen,
+  ArrowUpDown, ChevronUp, ChevronDown, Users, BookOpen, Mail, Loader2,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -102,6 +103,9 @@ export default function AnalyticsDashboard() {
   const [sortField, setSortField] = useState('totalFines');
   const [sortDir, setSortDir] = useState('desc');
 
+  /* Email sending state */
+  const [sendingEmails, setSendingEmails] = useState(false);
+
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
@@ -149,6 +153,23 @@ export default function AnalyticsDashboard() {
   /* Summary stats */
   const totalIssues = issueTrends.reduce((s, d) => s + (Number(d.totalIssues) || 0), 0);
   const totalFinesCollected = fineDefaulters.reduce((s, d) => s + (Number(d.totalFines) || 0), 0);
+
+  /* Send retention emails handler */
+  const handleSendRetentionEmails = async () => {
+    if (sendingEmails || inactiveUsers.length === 0) return;
+    setSendingEmails(true);
+    try {
+      const res = await sendRetentionEmails();
+      setToast({ message: res.data?.message || 'Retention emails are being sent!', type: 'success' });
+    } catch (err) {
+      const msg = err.response?.status === 409
+        ? err.response.data?.message || 'Email campaign already in progress.'
+        : 'Failed to send retention emails.';
+      setToast({ message: msg, type: 'error' });
+    } finally {
+      setSendingEmails(false);
+    }
+  };
 
   return (
     <div style={{ paddingTop: 10, minHeight: '100vh', background: 'transparent' }}>
@@ -361,7 +382,7 @@ export default function AnalyticsDashboard() {
             <div style={card}>
               <div style={{
                 padding: '1.25rem 1.25rem 0.75rem',
-                display: 'flex', alignItems: 'center', gap: 8,
+                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
               }}>
                 <UserX size={18} color="#9333ea" />
                 <h6 style={{ fontWeight: 700, marginBottom: 0 }}>Inactive Users</h6>
@@ -372,6 +393,26 @@ export default function AnalyticsDashboard() {
                 <small style={{ color: '#9ca3af', fontSize: '0.74rem', marginLeft: 'auto' }}>
                   No activity in the last 6 months
                 </small>
+                {inactiveUsers.length > 0 && (
+                  <button
+                    onClick={handleSendRetentionEmails}
+                    disabled={sendingEmails}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      background: sendingEmails ? '#d8b4fe' : 'linear-gradient(135deg, #9333ea, #7c3aed)',
+                      color: '#fff', border: 'none', borderRadius: 8,
+                      padding: '7px 16px', fontSize: '0.78rem', fontWeight: 600,
+                      cursor: sendingEmails ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(147,51,234,0.25)',
+                      opacity: sendingEmails ? 0.75 : 1,
+                    }}
+                    onMouseEnter={e => { if (!sendingEmails) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(147,51,234,0.35)'; } }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 2px 8px rgba(147,51,234,0.25)'; }}
+                  >
+                    {sendingEmails ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Mail size={14} />}
+                    {sendingEmails ? 'Sending…' : 'Send Retention Emails'}
+                  </button>
+                )}
               </div>
               {inactiveUsers.length === 0 ? (
                 <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: '#9ca3af' }}>

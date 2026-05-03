@@ -51,9 +51,6 @@ export default function Navbar({ onToggleSidebar }) {
                 <li className="nav-item">
                   <a className="nav-link" href="/dashboard"><LayoutDashboard size={16} className="me-1" />Dashboard</a>
                 </li>
-                <li className="nav-item">
-                  <a className="nav-link" href="/issued"><BookMarked size={16} className="me-1" />My Books</a>
-                </li>
               </>
             )}
             {auth && !isLibrarian() && isAdmin() && (
