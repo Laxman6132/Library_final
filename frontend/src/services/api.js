@@ -86,5 +86,6 @@ export const getAnalyticsMostBorrowed = () => api.get('/analytics/most-borrowed'
 export const getAnalyticsIssueTrends = () => api.get('/analytics/issue-trends');
 export const getAnalyticsFineDefaulters = () => api.get('/analytics/fine-defaulters');
 export const getAnalyticsInactiveUsers = () => api.get('/analytics/inactive-users');
+export const sendRetentionEmails = () => api.post('/analytics/email-inactive');
 
 export default api;

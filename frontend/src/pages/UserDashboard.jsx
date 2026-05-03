@@ -44,11 +44,7 @@ export default function UserDashboard() {
     }
   };
 
-  const quickLinks = [
-    { icon: <BookMarked size={22} />, label: 'Issued Books', path: '/issued', color: 'var(--primary-dark)', bg: 'var(--primary-light)' },
-    { icon: <Heart size={22} />, label: 'My Favourites', path: '/favourites', color: '#dc3545', bg: '#fce8ea' },
-    { icon: <Clock size={22} />, label: 'Waiting List', path: '/waiting-list', color: '#fd7e14', bg: '#fff3e0' },
-  ];
+
 
   return (
     <div style={{ paddingTop: 10, minHeight: '100vh', background: 'transparent' }}>
@@ -65,26 +61,6 @@ export default function UserDashboard() {
       </div>
 
       <div className="container py-4">
-        {/* Quick Links */}
-        <div className="row g-3 mb-4">
-          {quickLinks.map(q => (
-            <div key={q.label} className="col-md-4">
-              <div className="card border-0 shadow-sm h-100" style={{ borderRadius: 14, cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                onClick={() => navigate(q.path)}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
-                <div className="card-body d-flex align-items-center gap-3 p-3">
-                  <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                    style={{ width: 48, height: 48, background: q.bg, color: q.color }}>
-                    {q.icon}
-                  </div>
-                  <span className="fw-semibold">{q.label}</span>
-                  <ChevronRight size={18} className="ms-auto text-muted" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
 
         {/* ══ Recommended for You — regular users only ══ */}
         {isRegularUser && (
@@ -113,7 +89,7 @@ export default function UserDashboard() {
             ) : (
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: '1.25rem',
               }}>
                 {recommendations.map(book => (

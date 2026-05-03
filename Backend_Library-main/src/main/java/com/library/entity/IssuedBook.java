@@ -28,6 +28,9 @@ public class IssuedBook {
     @Column(name = "returned", columnDefinition = "TINYINT(1) NOT NULL DEFAULT 0")
     private boolean returned;
 
+    @Column(name = "reminder_sent", columnDefinition = "TINYINT(1) NOT NULL DEFAULT 0")
+    private boolean reminderSent;
+
     @Override
     public String toString() {
         return "IssuedBook{" +
@@ -39,6 +42,7 @@ public class IssuedBook {
                 ", finePaid=" + finePaid +
                 ", returnDate=" + returnDate +
                 ", returned=" + returned +
+                ", reminderSent=" + reminderSent +
                 '}';
     }
 
@@ -106,7 +110,15 @@ public class IssuedBook {
         this.returned = returned;
     }
 
-    public IssuedBook(int issueId, User user, Book book, LocalDateTime issueDate, LocalDateTime dueDate, int finePaid, LocalDateTime returnDate, boolean returned) {
+    public boolean isReminderSent() {
+        return reminderSent;
+    }
+
+    public void setReminderSent(boolean reminderSent) {
+        this.reminderSent = reminderSent;
+    }
+
+    public IssuedBook(int issueId, User user, Book book, LocalDateTime issueDate, LocalDateTime dueDate, int finePaid, LocalDateTime returnDate, boolean returned, boolean reminderSent) {
         this.issueId = issueId;
         this.user = user;
         this.book = book;
@@ -115,6 +127,7 @@ public class IssuedBook {
         this.finePaid = finePaid;
         this.returnDate = returnDate;
         this.returned = returned;
+        this.reminderSent = reminderSent;
     }
 
     public IssuedBook() {

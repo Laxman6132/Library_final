@@ -517,10 +517,10 @@ export default function HomePage() {
                 </div>
               ) : (
                 <>
-                  {/* 2-column grid */}
+                  {/* 3-column grid */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
                     gap: '1.25rem',
                   }}>
                     {catalogBooks.map(book => (
