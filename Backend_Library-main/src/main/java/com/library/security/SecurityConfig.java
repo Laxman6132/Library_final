@@ -36,8 +36,8 @@ public class SecurityConfig {
                             "/login", "/register", "/dashboard", "/issued", "/favourites", "/waiting-list", "/books/**", "/home", "/analytics",
                             "/*.js", "/*.css", "/vite.svg", "/error"
                         ).permitAll()
-//                        .requestMatchers("/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/librarian/**").hasAnyRole("LIBRARIAN", "ADMIN")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/librarian/**").hasAnyRole("LIBRARIAN", "ADMIN")
                         .anyRequest().authenticated()
                 )
 
