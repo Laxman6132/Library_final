@@ -92,6 +92,11 @@ body {
   50%      { transform: scale(1.04); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ─── Page Entrance ──────────────────────────────────────── */
 .container { animation: fadeInUp 0.35s ease; }
 
